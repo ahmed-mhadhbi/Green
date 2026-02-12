@@ -1,19 +1,37 @@
 const admin = require("firebase-admin");
+require("dotenv").config();
+
+function env(name, fallbackName) {
+  return process.env[name] || (fallbackName ? process.env[fallbackName] : undefined);
+}
 
 function buildCredentialFromEnv() {
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-    const parsed = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+  const rawServiceAccount = env("FIREBASE_SERVICE_ACCOUNT_KEY", "SERVICE_ACCOUNT_KEY");
+  if (rawServiceAccount) {
+    const parsed = JSON.parse(rawServiceAccount);
     if (parsed.private_key) {
       parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
     }
     return parsed;
   }
 
-  if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+  const projectId = env("FIREBASE_PROJECT_ID", "PROJECT_ID");
+  const clientEmail = env("FIREBASE_CLIENT_EMAIL", "CLIENT_EMAIL");
+  const privateKey = env("FIREBASE_PRIVATE_KEY", "PRIVATE_KEY");
+
+  if (projectId && clientEmail && privateKey) {
     return {
-      project_id: process.env.FIREBASE_PROJECT_ID,
-      client_email: process.env.FIREBASE_CLIENT_EMAIL,
-      private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
+      type: env("FIREBASE_TYPE", "TYPE") || "service_account",
+      project_id: projectId,
+      private_key_id: env("FIREBASE_PRIVATE_KEY_ID", "PRIVATE_KEY_ID"),
+      private_key: privateKey.replace(/\\n/g, "\n"),
+      client_email: clientEmail,
+      client_id: env("FIREBASE_CLIENT_ID", "CLIENT_ID"),
+      auth_uri: env("FIREBASE_AUTH_URI", "AUTH_URI"),
+      token_uri: env("FIREBASE_TOKEN_URI", "TOKEN_URI"),
+      auth_provider_x509_cert_url: env("FIREBASE_AUTH_PROVIDER_X509_CERT_URL", "AUTH_PROVIDER_X509_CERT_URL"),
+      client_x509_cert_url: env("FIREBASE_CLIENT_X509_CERT_URL", "CLIENT_X509_CERT_URL"),
+      universe_domain: env("FIREBASE_UNIVERSE_DOMAIN", "UNIVERSE_DOMAIN")
     };
   }
 
@@ -27,7 +45,7 @@ function initFirebase() {
   if (serviceAccount) {
     return admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || undefined
+      storageBucket: env("FIREBASE_STORAGE_BUCKET", "STORAGE_BUCKET") || undefined
     });
   }
 
@@ -36,7 +54,7 @@ function initFirebase() {
   try {
     return admin.initializeApp({
       credential: admin.credential.applicationDefault(),
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || undefined
+      storageBucket: env("FIREBASE_STORAGE_BUCKET", "STORAGE_BUCKET") || undefined
     });
   } catch (_error) {
     throw new Error(

@@ -101,7 +101,7 @@ export default function Home() {
             <li><a href="#about">About</a></li>
             <li><a href="#achievements">Achievements</a></li>
             <li><a href="#contact">Contact</a></li>
-            <li><Link to="/login" className="login-btn">Login / Register</Link></li>
+            <li><Link to="/login" className="login-btn">Login</Link></li>
           </ul>
         </div>
       </nav>
@@ -144,36 +144,80 @@ export default function Home() {
         <div className="about-content">
           <div className="about-text animate-on-scroll">
             <h2>About</h2>
-            <p><strong>GreenImpact</strong> belongs to The Switchers Support Programme, an initiative which contributes to the 2030 Agenda for Sustainable Development and its SDGs by creating and enhancing sustainable businesses.</p>
-            <p>In order to create an enabling ecosystem for sustainable enterprises, through The Switchers Support Programme we work closely with green and circular entrepreneurs and companies, business support organizations, trainers and mentors, financial institutions, policy-makers and other relevant stakeholders.</p>
-            <p>In Mediterranean countries, we set up National Partnerships gathered under a common community of practices Business Support Organizations which targets sustainable entrepreneurs and companies.</p>
-            <p>Our main targets are The Switchers, businesses implementing innovative ecological and social solutions that contribute to a switch to sustainable and fair consumption and production models. They are active in a variety of fields, including organic food, renewable energy, waste management, sustainable tourism, organic textile, sustainable building, organic cosmetics, and sustainable mobility, among others.</p>
+            <p>
+              <strong>GreenImpact</strong> belongs to The Green Impact Support Programme, an initiative which contributes to the 2030 Agenda for Sustainable Development and its SDGs by creating and enhancing sustainable businesses.
+            </p>
+            <p>
+              In order to create an enabling ecosystem for sustainable enterprises, through The Green Impact Support Programme we work closely with green and circular entrepreneurs and companies, business support organizations, trainers and mentors, financial institutions, policy-makers and other relevant stakeholders.
+            </p>
+            <p>
+              In Mediterranean countries, we set up National Partnerships gathered under a common community of practices Business Support Organizations which targets sustainable entrepreneurs and companies.
+            </p>
+            <p>
+              Our main targets are The Switchers, businesses implementing innovative ecological and social solutions that contribute to a switch to sustainable and fair consumption and production models. They are active in a variety of fields, including organic food, renewable energy, waste management, sustainable tourism, organic textile, sustainable building, organic cosmetics, and sustainable mobility, among others.
+            </p>
           </div>
+
           <div className="about-visual animate-on-scroll">
             <div className="visual-circle"></div>
             <div className="visual-circle"></div>
             <div className="visual-circle"></div>
           </div>
         </div>
-      </section>
 
-      {/* Stats */}
-      <section className="stats" id="achievements" ref={statsRef}>
-        <div className="stats-grid">
-          {[
-            { number: 3747, label: "Entrepreneurs", desc: "Persons supported to develop their Sustainable Businesses." },
-            { number: 632, label: "Trainers", desc: "Experts trained in Sustainable Business Model Development." },
-            { number: 125, label: "BSO", desc: "Business Support Organizations members of the Switchers Support Programme." },
-            { number: "85%", label: "are satisfied", desc: "% of entrepreneurs that are satisfied with the supporting services and tools" },
-          ].map((stat, idx) => (
-            <div key={idx} className="stat-item">
-              <span className="stat-number">{stat.number}</span>
-              <div className="stat-label">{stat.label}</div>
-              <p className="stat-description">{stat.desc}</p>
-            </div>
-          ))}
+        {/* New Images Below */}
+        <div className="about-gallery animate-on-scroll">
+          <div>
+            <h4>We support you at every stage of development:</h4><br /><br />
+            <img
+              src="/images/about1.png"
+              alt="Sustainable business development"
+              className="about-gallery-image"
+            />
+          </div>
+          <div>
+            <h4>We provide The Switchers with a comprehensive set of services to design,</h4> <h4>develop and accelerate their green and circular businesses:</h4><br />
+            <img
+              src="/images/about2.png"
+              alt="Green entrepreneurship"
+              className="about-gallery-image"
+            />
+          </div>
         </div>
       </section>
+
+
+      {/* Stats */}
+      {/* Achievements Section */}
+      <section id="achievements">
+        {/* Title with About-style background */}
+        <div className="achievements-header animate-on-scroll">
+          <h2>Achievements</h2>
+        </div>
+
+        {/* Stats Grid */}
+        <section className="stats" ref={statsRef}>
+          <div className="stats-grid">
+            {[
+              { number: 3747, label: "Entrepreneurs", desc: "Persons supported to develop their Sustainable Businesses." },
+              { number: 632, label: "Trainers", desc: "Experts trained in Sustainable Business Model Development." },
+              { number: 125, label: "BSO", desc: "Business Support Organizations members of the Switchers Support Programme." },
+              { number: 400, label: "Members", desc: "Eco-innovators of The GreenImpact community." },
+              { number: "43%", label: "are women", desc: "% of supported entrepreneurs that are women" },
+              { number: "85%", label: "are satisfied", desc: "% of entrepreneurs that are satisfied with the supporting services and tools" },
+              { number: 162 , label: "Sources", desc: "sources of financing available in our database" },
+              { number: 3.9 , label: "Million", desc: "million € raised by The Green Impact Fund" },
+            ].map((stat, idx) => (
+              <div key={idx} className="stat-item">
+                <span className="stat-number">{stat.number}</span>
+                <div className="stat-label">{stat.label}</div>
+                <p className="stat-description">{stat.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </section>
+
 
       {/* Contact */}
       <section className="contact" id="contact">

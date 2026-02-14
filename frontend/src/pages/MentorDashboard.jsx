@@ -3,20 +3,14 @@ import dayjs from "dayjs";
 import { apiRequest } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 
-const sampleModuleTemplate = `[
-  {
-    "title": "Sustainable Value Proposition",
-    "videoUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    "documentUrl": "",
-    "quiz": [
-      {
-        "question": "Which pillar is part of sustainability?",
-        "options": ["Economic", "Random", "None"],
-        "answerIndex": 0
-      }
-    ]
-  }
-]`;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000/api";
+const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
+
+const emptyModule = {
+  title: "",
+  videoUrl: "",
+  documentUrl: ""
+};
 
 export default function MentorDashboard() {
   const { token } = useAuth();
@@ -25,6 +19,7 @@ export default function MentorDashboard() {
   const [projects, setProjects] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [message, setMessage] = useState("");
+  const [uploadResult, setUploadResult] = useState(null);
 
   const [courseForm, setCourseForm] = useState({
     title: "",
@@ -32,7 +27,7 @@ export default function MentorDashboard() {
     track: "green",
     level: "beginner",
     learningPath: "green",
-    modulesRaw: sampleModuleTemplate
+    modules: [{ ...emptyModule }]
   });
 
   const [sessionForm, setSessionForm] = useState({
@@ -42,6 +37,8 @@ export default function MentorDashboard() {
     endAt: "",
     meetingLink: ""
   });
+
+  const [resourceFile, setResourceFile] = useState(null);
 
   async function loadAll() {
     const [coursesRes, projectsRes, sessionsRes] = await Promise.all([
@@ -60,9 +57,36 @@ export default function MentorDashboard() {
     loadAll().catch((err) => setMessage(err.message));
   }, [token]);
 
+  function updateModule(index, field, value) {
+    setCourseForm((prev) => {
+      const nextModules = [...prev.modules];
+      nextModules[index] = { ...nextModules[index], [field]: value };
+      return { ...prev, modules: nextModules };
+    });
+  }
+
+  function addModule() {
+    setCourseForm((prev) => ({ ...prev, modules: [...prev.modules, { ...emptyModule }] }));
+  }
+
+  function removeModule(index) {
+    setCourseForm((prev) => {
+      if (prev.modules.length === 1) return prev;
+      return { ...prev, modules: prev.modules.filter((_, idx) => idx !== index) };
+    });
+  }
+
   async function createCourse(e) {
     e.preventDefault();
-    const modules = JSON.parse(courseForm.modulesRaw || "[]");
+
+    const modules = courseForm.modules
+      .map((module) => ({
+        title: module.title.trim(),
+        videoUrl: module.videoUrl.trim(),
+        documentUrl: module.documentUrl.trim(),
+        quiz: []
+      }))
+      .filter((module) => module.title);
 
     await apiRequest("/courses", {
       method: "POST",
@@ -78,8 +102,35 @@ export default function MentorDashboard() {
     });
 
     setMessage("Course created.");
-    setCourseForm({ ...courseForm, title: "", description: "" });
+    setCourseForm({
+      ...courseForm,
+      title: "",
+      description: "",
+      modules: [{ ...emptyModule }]
+    });
     await loadAll();
+  }
+
+  async function uploadResource(e) {
+    e.preventDefault();
+    if (!resourceFile) {
+      setMessage("Please choose a resource file first.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", resourceFile);
+
+    const res = await apiRequest("/uploads/resource", {
+      method: "POST",
+      token,
+      body: formData,
+      formData: true
+    });
+
+    setUploadResult(res.resource);
+    setResourceFile(null);
+    setMessage("Resource uploaded.");
   }
 
   async function addFeedback(projectId, requestCorrections) {
@@ -150,8 +201,38 @@ export default function MentorDashboard() {
               <option value="green">green</option>
             </select>
           </div>
-          <textarea rows="8" value={courseForm.modulesRaw} onChange={(e) => setCourseForm({ ...courseForm, modulesRaw: e.target.value })} />
-          <button className="btn primary">Create course</button>
+
+          <h3>Course modules</h3>
+          {courseForm.modules.map((module, idx) => (
+            <div key={`module-${idx}`} className="tile">
+              <p><strong>Module {idx + 1}</strong></p>
+              <div className="form-stack">
+                <input
+                  placeholder="Module title"
+                  value={module.title}
+                  onChange={(e) => updateModule(idx, "title", e.target.value)}
+                  required={idx === 0}
+                />
+                <input
+                  placeholder="Video URL"
+                  value={module.videoUrl}
+                  onChange={(e) => updateModule(idx, "videoUrl", e.target.value)}
+                />
+                <input
+                  placeholder="Document URL"
+                  value={module.documentUrl}
+                  onChange={(e) => updateModule(idx, "documentUrl", e.target.value)}
+                />
+                <div className="inline">
+                  <button type="button" className="btn" onClick={() => removeModule(idx)} disabled={courseForm.modules.length === 1}>Remove module</button>
+                </div>
+              </div>
+            </div>
+          ))}
+          <div className="inline">
+            <button type="button" className="btn" onClick={addModule}>Add module</button>
+            <button className="btn primary">Create course</button>
+          </div>
         </form>
 
         <div className="grid-2">
@@ -163,6 +244,20 @@ export default function MentorDashboard() {
             </article>
           ))}
         </div>
+      </section>
+
+      <section className="card">
+        <h2>Upload learning resource</h2>
+        <form className="form-stack" onSubmit={uploadResource}>
+          <input type="file" onChange={(e) => setResourceFile(e.target.files?.[0] || null)} required />
+          <button className="btn" type="submit">Upload resource</button>
+        </form>
+        {uploadResult ? (
+          <div className="tile">
+            <p><strong>Uploaded:</strong> {uploadResult.name}</p>
+            <a href={`${API_ORIGIN}${uploadResult.path}`} target="_blank" rel="noreferrer">Open uploaded file</a>
+          </div>
+        ) : null}
       </section>
 
       <section className="card span-2">
@@ -205,7 +300,7 @@ export default function MentorDashboard() {
           <article className="tile" key={session.id}>
             <p><strong>{session.topic}</strong></p>
             <p>{dayjs(session.startAt).format("YYYY-MM-DD HH:mm")}</p>
-            <a href={session.meetingLink} target="_blank">Open link</a>
+            <a href={session.meetingLink} target="_blank" rel="noreferrer">Open link</a>
             <p>Status: {session.status}</p>
             <div className="inline">
               <button className="btn" onClick={() => updateSessionStatus(session.id, "completed")}>Complete</button>

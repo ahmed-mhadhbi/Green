@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import dayjs from "dayjs";
 import { apiRequest } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { buildToolProgressList } from "../utils/toolProgress";
 
 const DEFAULT_FORMS = {
   valueProposition: "",
@@ -14,7 +16,7 @@ const DEFAULT_FORMS = {
 };
 
 export default function EntrepreneurDashboard() {
-  const { token } = useAuth();
+  const { token, firebaseUser } = useAuth();
   const [courses, setCourses] = useState([]);
   const [learning, setLearning] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -44,6 +46,14 @@ export default function EntrepreneurDashboard() {
     if (!token) return;
     loadAll().catch((err) => setMessage(err.message));
   }, [token]);
+
+  const toolProgress = useMemo(() => {
+    return buildToolProgressList({ uid: firebaseUser?.uid, projects });
+  }, [firebaseUser?.uid, projects]);
+
+  const usedTools = useMemo(() => {
+    return toolProgress.filter((tool) => tool.percent > 0);
+  }, [toolProgress]);
 
   async function enroll(courseId) {
     await apiRequest(`/courses/${courseId}/enroll`, { method: "POST", token });
@@ -111,6 +121,22 @@ export default function EntrepreneurDashboard() {
       {message ? <p className="info">{message}</p> : null}
 
       <section className="card span-2">
+        <h2>My tool progress</h2>
+        <p>Used tools: {usedTools.length} / {toolProgress.length}</p>
+        <div className="tool-progress-list">
+          {toolProgress.map((tool) => (
+            <article key={tool.toolKey} className="tile tool-progress-item">
+              <div>
+                <h3>{tool.title}</h3>
+                <p>{tool.percent}% - {tool.status}</p>
+              </div>
+              <Link className="btn" to={`/app/tools/${tool.toolKey}`}>Continue</Link>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="card span-2">
         <h2>Learning paths</h2>
         <p>Classic entrepreneurship and green entrepreneurship tracks.</p>
         <div className="grid-2">
@@ -123,8 +149,8 @@ export default function EntrepreneurDashboard() {
               {(course.modules || []).map((module, idx) => (
                 <div key={`${course.id}-m-${idx}`} className="module">
                   <p>{idx + 1}. {module.title}</p>
-                  {module.videoUrl ? <a href={module.videoUrl} target="_blank">Video</a> : null}
-                  {module.documentUrl ? <a href={module.documentUrl} target="_blank">Download doc</a> : null}
+                  {module.videoUrl ? <a href={module.videoUrl} target="_blank" rel="noreferrer">Video</a> : null}
+                  {module.documentUrl ? <a href={module.documentUrl} target="_blank" rel="noreferrer">Download doc</a> : null}
                 </div>
               ))}
               <button className="btn" onClick={() => enroll(course.id)}>Enroll</button>
@@ -169,7 +195,7 @@ export default function EntrepreneurDashboard() {
           <div key={session.id} className="tile">
             <p><strong>{session.topic}</strong></p>
             <p>{dayjs(session.startAt).format("YYYY-MM-DD HH:mm")} to {dayjs(session.endAt).format("HH:mm")}</p>
-            <a href={session.meetingLink} target="_blank">Open meeting</a>
+            <a href={session.meetingLink} target="_blank" rel="noreferrer">Open meeting</a>
             <p>Status: <strong>{session.status}</strong></p>
           </div>
         ))}

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 
 export default function Home() {
   const statsRef = useRef(null);
@@ -100,7 +101,7 @@ export default function Home() {
             <li><a href="#about">About</a></li>
             <li><a href="#achievements">Achievements</a></li>
             <li><a href="#contact">Contact</a></li>
-            <li><a href="#login" className="login-btn">Login</a></li>
+            <li><Link to="/login" className="login-btn">Login / Register</Link></li>
           </ul>
         </div>
       </nav>

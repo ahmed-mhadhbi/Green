@@ -8,6 +8,10 @@ import MentorDashboard from "./pages/MentorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import Layout from "./components/Layout";
 import Home from "./components/Home";
+import AppHome from "./pages/AppHome";
+import ToolsPage from "./pages/ToolsPage";
+import ToolQuestionnairePage from "./pages/ToolQuestionnairePage";
+import ProductsPage from "./pages/ProductsPage";
 
 function DashboardRouter() {
   const { profile } = useAuth();
@@ -19,24 +23,23 @@ function DashboardRouter() {
 }
 
 export default function App() {
+  const withAppLayout = (element) => (
+    <ProtectedRoute>
+      <Layout>{element}</Layout>
+    </ProtectedRoute>
+  );
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      
       <Route path="/home" element={<Home />} />
-
-      <Route
-        path="/dashboard"
-        element={(
-          <ProtectedRoute>
-            <Layout>
-              <DashboardRouter />
-            </Layout>
-          </ProtectedRoute>
-        )}
-      />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/dashboard" element={withAppLayout(<DashboardRouter />)} />
+      <Route path="/app/home" element={withAppLayout(<AppHome />)} />
+      <Route path="/app/tools" element={withAppLayout(<ToolsPage />)} />
+      <Route path="/app/tools/:toolKey" element={withAppLayout(<ToolQuestionnairePage />)} />
+      <Route path="/app/products" element={withAppLayout(<ProductsPage />)} />
+      <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
   );
 }

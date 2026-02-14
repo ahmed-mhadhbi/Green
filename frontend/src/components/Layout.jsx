@@ -22,6 +22,7 @@ export default function Layout({ children }) {
 
       <nav className="nav">
         <NavLink to="/dashboard">Dashboard</NavLink>
+        <NavLink to="/app/home">Home</NavLink>
       </nav>
 
       <main className="content">{children}</main>

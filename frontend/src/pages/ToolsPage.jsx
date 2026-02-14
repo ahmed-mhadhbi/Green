@@ -39,7 +39,8 @@ export default function ToolsPage() {
 
   return (
     <div className="content-stack">
-      <section className="card">
+      <section className="card page-hero">
+        <div className="hero-kicker">Toolkit Center</div>
         <h2>Tools</h2>
         <p>Choose a toolkit to continue your sustainability work.</p>
         {error ? <p className="error">{error}</p> : null}
@@ -51,12 +52,22 @@ export default function ToolsPage() {
 
           return (
             <article key={tool.key} className="card tool-card">
-              <h3>{tool.title}</h3>
+              <div className="tool-head">
+                <div className="tool-icon" aria-hidden="true">
+                  {tool.title.split(" ").map((chunk) => chunk[0]).join("").slice(0, 2)}
+                </div>
+                <h3>{tool.title}</h3>
+              </div>
               <p>{tool.description}</p>
               {progress ? (
-                <p className="tool-progress">
-                  Progress: <strong>{progress.percent}%</strong> ({progress.status})
-                </p>
+                <>
+                  <p className="tool-progress">
+                    Progress: <strong>{progress.percent}%</strong> ({progress.status})
+                  </p>
+                  <div className="progress-track" aria-hidden="true">
+                    <div className="progress-fill" style={{ width: `${progress.percent}%` }}></div>
+                  </div>
+                </>
               ) : null}
               <Link className="btn" to={`/app/tools/${tool.key}`}>Open tool</Link>
             </article>

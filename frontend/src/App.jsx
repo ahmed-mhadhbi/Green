@@ -7,6 +7,7 @@ import EntrepreneurDashboard from "./pages/EntrepreneurDashboard";
 import MentorDashboard from "./pages/MentorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import Layout from "./components/Layout";
+import Home from "./components/Home";
 
 function DashboardRouter() {
   const { profile } = useAuth();
@@ -22,6 +23,9 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      
+      <Route path="/home" element={<Home />} />
+
       <Route
         path="/dashboard"
         element={(

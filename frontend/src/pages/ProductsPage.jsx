@@ -52,7 +52,8 @@ export default function ProductsPage() {
     <div className="content-stack">
       {error ? <p className="error">{error}</p> : null}
 
-      <section className="card">
+      <section className="card page-hero">
+        <div className="hero-kicker">Products Hub</div>
         <h2>Products</h2>
         <p>
           {profile?.role === "entrepreneur"
@@ -62,14 +63,20 @@ export default function ProductsPage() {
       </section>
 
       <section className="products-grid">
-        <article className="card">
-          <h3>Forms</h3>
+        <article className="card product-card">
+          <div className="product-head">
+            <div className="product-icon" aria-hidden="true">F</div>
+            <h3>Forms</h3>
+          </div>
           <p>Complete product or service forms from your dashboard workspace.</p>
           <Link className="btn" to="/dashboard">Go to dashboard forms</Link>
         </article>
 
-        <article className="card">
-          <h3>Workshops</h3>
+        <article className="card product-card">
+          <div className="product-head">
+            <div className="product-icon" aria-hidden="true">W</div>
+            <h3>Workshops</h3>
+          </div>
           <div className="table-wrap">
             <table>
               <thead>
@@ -98,8 +105,11 @@ export default function ProductsPage() {
           </div>
         </article>
 
-        <article className="card">
-          <h3>Call for application</h3>
+        <article className="card product-card">
+          <div className="product-head">
+            <div className="product-icon" aria-hidden="true">C</div>
+            <h3>Call for application</h3>
+          </div>
           {APPLICATIONS.map((application) => (
             <div className="tile" key={application.id}>
               <p><strong>{application.title}</strong></p>
@@ -109,8 +119,11 @@ export default function ProductsPage() {
           ))}
         </article>
 
-        <article className="card">
-          <h3>My documents</h3>
+        <article className="card product-card">
+          <div className="product-head">
+            <div className="product-icon" aria-hidden="true">D</div>
+            <h3>My documents</h3>
+          </div>
           {documents.length === 0 ? <p>No generated documents yet.</p> : null}
           {documents.map((document, index) => (
             <div className="tile" key={`${document.fileName}-${index}`}>
@@ -122,7 +135,7 @@ export default function ProductsPage() {
         </article>
       </section>
 
-      <section className="card">
+      <section className="card eco-card">
         <h3>Eco-innovation</h3>
         <p>
           Discover practical sustainability pathways and improve your solution through the available tools.

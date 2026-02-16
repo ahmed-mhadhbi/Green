@@ -1,47 +1,38 @@
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function Home() {
   const statsRef = useRef(null);
+  const { firebaseUser, profile, logout } = useAuth();
+  const firstName = (profile?.name || firebaseUser?.displayName || "User").split(" ")[0];
 
-  // Navbar scroll effect
   useEffect(() => {
     const handleScroll = () => {
       const navbar = document.querySelector(".navbar");
+      if (!navbar) return;
       if (window.scrollY > 50) navbar.classList.add("scrolled");
       else navbar.classList.remove("scrolled");
     };
+
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Smooth scrolling
   useEffect(() => {
-    const anchors = document.querySelectorAll('a[href^="#"]');
-    anchors.forEach((anchor) => {
-      anchor.addEventListener("click", (e) => {
-        e.preventDefault();
-        const target = document.querySelector(anchor.getAttribute("href"));
-        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-    });
-    return () => anchors.forEach((anchor) => anchor.removeEventListener("click", () => {}));
-  }, []);
-
-  // Scroll animations
-  useEffect(() => {
-    const observerOptions = { threshold: 0.1, rootMargin: "0px 0px -100px 0px" };
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) entry.target.classList.add("animated");
-      });
-    }, observerOptions);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) entry.target.classList.add("animated");
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -100px 0px" }
+    );
 
     document.querySelectorAll(".animate-on-scroll").forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, []);
 
-  // Stats counter animation
   useEffect(() => {
     const animateCounter = (element, target, duration = 2000) => {
       let start = 0;
@@ -64,18 +55,18 @@ export default function Home() {
             const numbers = entry.target.querySelectorAll(".stat-number");
             numbers.forEach((num) => {
               const text = num.textContent;
-              const isPercentage = text.includes("%");
-              const value = parseInt(text.replace(/[^\d]/g, ""));
-              if (!isPercentage) animateCounter(num, value);
-              else {
-                const tempDiv = document.createElement("span");
-                tempDiv.textContent = "0";
+              const value = parseInt(text.replace(/[^\d]/g, ""), 10);
+              if (text.includes("%")) {
+                const temp = document.createElement("span");
+                temp.textContent = "0";
                 num.textContent = "";
-                num.appendChild(tempDiv);
-                animateCounter(tempDiv, value);
+                num.appendChild(temp);
+                animateCounter(temp, value);
                 setTimeout(() => {
-                  tempDiv.textContent = value + "%";
+                  temp.textContent = `${value}%`;
                 }, 2100);
+              } else {
+                animateCounter(num, value);
               }
             });
             statsObserver.unobserve(entry.target);
@@ -89,57 +80,91 @@ export default function Home() {
     return () => statsObserver.disconnect();
   }, []);
 
+  const toolsHref = firebaseUser ? "/app/tools" : "/join-us";
+  const productsHref = firebaseUser ? "/app/products" : "/join-us";
+
   return (
     <div>
-      {/* Navigation */}
       <nav className="navbar">
         <div className="nav-container">
           <a href="#home" className="logo">Green<span>Impact</span></a>
           <ul className="nav-links">
             <li><a href="#home">Home</a></li>
-            <li><a href="#pathfinder">Pathfinder</a></li>
+            {!firebaseUser ? <li><a href="#join-us">Join Us</a></li> : null}
+            <li><a href="#hub">Platform Hub</a></li>
             <li><a href="#about">About</a></li>
             <li><a href="#achievements">Achievements</a></li>
             <li><a href="#contact">Contact</a></li>
-            <li><Link to="/login" className="login-btn">Login</Link></li>
+            {!firebaseUser ? (
+              <li><a href="#join-us" className="login-btn">Login</a></li>
+            ) : (
+              <>
+                <li><span className="home-user-pill">{firstName}</span></li>
+                <li><button className="home-signout-btn" onClick={logout}>Sign out</button></li>
+              </>
+            )}
           </ul>
         </div>
       </nav>
 
-      {/* Hero */}
       <section className="hero" id="home">
         <div className="hero-content">
           <h1>Green Impact</h1>
           <p className="subtitle">The home of sustainable business</p>
-          <a href="#pathfinder" className="cta-button">Start Here</a>
+          <a href="#hub" className="cta-button">Explore platform</a>
         </div>
       </section>
 
-      {/* Pathfinder Section */}
-      <section className="pathfinder" id="pathfinder">
+      {!firebaseUser ? (
+        <section className="join-section" id="join-us">
+          <div className="section-header animate-on-scroll">
+            <h2>Join Us</h2>
+            <p>Choose your profile, fill the form, and apply on Toolbox.</p>
+          </div>
+          <div className="join-choice-grid animate-on-scroll">
+            <Link to="/join-us?track=entrepreneur" className="join-choice">
+              <img src="/images/Green%20Entrepreneur.webp" alt="Green entrepreneur registration" className="join-choice-image" />
+              <h3>Green Entrepreneur registration</h3>
+              <p>For entrepreneurs building sustainable and circular projects.</p>
+            </Link>
+            <Link to="/join-us?track=bso" className="join-choice">
+              <img src="/images/buisness%20support.png" alt="Business support organization registration" className="join-choice-image" />
+              <h3>Business support organization registration</h3>
+              <p>For institutions and organizations with sustainable programs.</p>
+            </Link>
+            <Link to="/join-us?track=mentor" className="join-choice">
+              <img src="/images/mentor.png" alt="Mentor registration" className="join-choice-image" />
+              <h3>Trainer registration</h3>
+              <p>For mentors and trainers supporting green businesses.</p>
+            </Link>
+            
+          </div>
+          <div className="join-actions">
+            <Link to="/join-us" className="btn primary">Open Join Us forms</Link>
+            <Link to="/login" className="btn">Already registered? Sign in</Link>
+          </div>
+        </section>
+      ) : null}
+
+      <section className="pathfinder" id="hub">
         <div className="section-header animate-on-scroll">
-          <h2>Pathfinder</h2>
-          <p>Find your path to sustainable business.</p>
+          <h2>Platform Hub</h2>
+          <p>Go directly to your work areas.</p>
         </div>
-        <div className="cards-grid">
-          {[
-            { icon: "🛠️", title: "The Switchers Toolbox", desc: "Get free access to the most innovative set of methodologies and tools for sustainable business development." },
-            { icon: "💰", title: "The Switchers Fund", desc: "Connecting sustainable businesses with financial actors in the Mediterranean." },
-            { icon: "🌍", title: "The Switchers Community", desc: "Meet and join the inspiring community of sustainable businesses across the Mediterranean." },
-            { icon: "📊", title: "The Switchers Policy Hub", desc: "Learn more about enabling policies for sustainable businesses in the Mediterranean." },
-            { icon: "🛍️", title: "The Switchers Products", desc: "Find the products and services offered by sustainable businesses in the Mediterranean." },
-            { icon: "💡", title: "Open Eco-Innovation", desc: "Connecting companies and entrepreneurs in the Mediterranean." },
-          ].map((card, idx) => (
-            <div key={idx} className="service-card animate-on-scroll">
-              <div className="card-icon">{card.icon}</div>
-              <h3>{card.title}</h3>
-              <p>{card.desc}</p>
-            </div>
-          ))}
+        <div className="cards-grid hub-cards">
+          <Link to={toolsHref} className="service-card animate-on-scroll hub-link-card">
+            <div className="card-icon">T</div>
+            <h3>Toolbox</h3>
+            <p>Open the guided sustainable business tools and questionnaires.</p>
+          </Link>
+          <Link to={productsHref} className="service-card animate-on-scroll hub-link-card">
+            <div className="card-icon">P</div>
+            <h3>Products</h3>
+            <p>Access forms, workshops, application calls, and generated documents.</p>
+          </Link>
         </div>
       </section>
 
-      {/* About Section */}
       <section className="about" id="about">
         <div className="about-content">
           <div className="about-text animate-on-scroll">
@@ -154,7 +179,7 @@ export default function Home() {
               In Mediterranean countries, we set up National Partnerships gathered under a common community of practices Business Support Organizations which targets sustainable entrepreneurs and companies.
             </p>
             <p>
-              Our main targets are The Switchers, businesses implementing innovative ecological and social solutions that contribute to a switch to sustainable and fair consumption and production models. They are active in a variety of fields, including organic food, renewable energy, waste management, sustainable tourism, organic textile, sustainable building, organic cosmetics, and sustainable mobility, among others.
+              Our main targets are The Switchers, businesses implementing innovative ecological and social solutions that contribute to a switch to sustainable and fair consumption and production models.
             </p>
           </div>
 
@@ -165,7 +190,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* New Images Below */}
         <div className="about-gallery animate-on-scroll">
           <div>
             <h4>We support you at every stage of development:</h4><br /><br />
@@ -186,16 +210,11 @@ export default function Home() {
         </div>
       </section>
 
-
-      {/* Stats */}
-      {/* Achievements Section */}
       <section id="achievements">
-        {/* Title with About-style background */}
         <div className="achievements-header animate-on-scroll">
           <h2>Achievements</h2>
         </div>
 
-        {/* Stats Grid */}
         <section className="stats" ref={statsRef}>
           <div className="stats-grid">
             {[
@@ -205,8 +224,8 @@ export default function Home() {
               { number: 400, label: "Members", desc: "Eco-innovators of The GreenImpact community." },
               { number: "43%", label: "are women", desc: "% of supported entrepreneurs that are women" },
               { number: "85%", label: "are satisfied", desc: "% of entrepreneurs that are satisfied with the supporting services and tools" },
-              { number: 162 , label: "Sources", desc: "sources of financing available in our database" },
-              { number: 3.9 , label: "Million", desc: "million € raised by The Green Impact Fund" },
+              { number: 162, label: "Sources", desc: "Sources of financing available in our database" },
+              { number: 3.9, label: "Million", desc: "Million EUR raised by The Green Impact Fund" }
             ].map((stat, idx) => (
               <div key={idx} className="stat-item">
                 <span className="stat-number">{stat.number}</span>
@@ -218,14 +237,12 @@ export default function Home() {
         </section>
       </section>
 
-
-      {/* Contact */}
       <section className="contact" id="contact">
         <div className="contact-container">
           <div className="contact-info animate-on-scroll">
             <h2>Contact us</h2>
             <div className="contact-item">
-              <h3>address</h3>
+              <h3>Address</h3>
               <p>Passeig de la Zona Franca, 107 (Torre Ponent)<br />08038 Barcelona, Espagne</p>
             </div>
             <div className="contact-item">
@@ -240,7 +257,6 @@ export default function Home() {
             className="contact-form animate-on-scroll"
             onSubmit={(e) => {
               e.preventDefault();
-              alert("Votre message a été envoyé. Merci!");
               e.target.reset();
             }}
           >
@@ -261,7 +277,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="footer">
         <div className="footer-content">
           <div className="footer-section">
@@ -272,7 +287,7 @@ export default function Home() {
             <h3>Quick links</h3>
             <ul className="footer-links">
               <li><a href="#home">Home</a></li>
-              <li><a href="#pathfinder">Pathfinder</a></li>
+              <li><a href="#hub">Platform Hub</a></li>
               <li><a href="#about">About</a></li>
               <li><a href="#contact">Contact</a></li>
             </ul>
@@ -280,14 +295,14 @@ export default function Home() {
           <div className="footer-section">
             <h3>Services</h3>
             <ul className="footer-links">
-              <li><a href="#">Toolbox</a></li>
-              <li><a href="#">Fund</a></li>
-              <li><a href="#">Community</a></li>
-              <li><a href="#">Policy Hub</a></li>
+              <li><a href="#hub">Toolbox</a></li>
+              <li><a href="#hub">Products</a></li>
+              <li><a href="#hub">Community</a></li>
+              <li><a href="#hub">Policy Hub</a></li>
             </ul>
           </div>
           <div className="footer-section">
-            <h3>follow us</h3>
+            <h3>Follow us</h3>
             <ul className="footer-links">
               <li><a href="#">Facebook</a></li>
               <li><a href="#">Twitter</a></li>

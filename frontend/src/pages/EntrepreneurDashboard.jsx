@@ -121,6 +121,11 @@ export default function EntrepreneurDashboard() {
       {message ? <p className="info">{message}</p> : null}
 
       <section className="card span-2">
+        <h2>Entrepreneur dashboard</h2>
+        <p>Build your project, follow tool progress, and track mentoring and learning activity.</p>
+      </section>
+
+      <section className="card span-2">
         <h2>My tool progress</h2>
         <p>Used tools: {usedTools.length} / {toolProgress.length}</p>
         <div className="tool-progress-list">

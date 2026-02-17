@@ -75,6 +75,7 @@ export default function AdminDashboard() {
                     <div className="inline">
                       <button className="btn" onClick={() => changeRole(user.id, "entrepreneur")}>Entrepreneur</button>
                       <button className="btn" onClick={() => changeRole(user.id, "mentor")}>Mentor</button>
+                      <button className="btn" onClick={() => changeRole(user.id, "business_support")}>Business support</button>
                       <button className="btn" onClick={() => changeRole(user.id, "admin")}>Admin</button>
                     </div>
                   </td>

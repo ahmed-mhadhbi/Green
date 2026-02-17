@@ -108,6 +108,17 @@ export default function Home() {
       </nav>
 
       <section className="hero" id="home">
+        <video
+          className="hero-video"
+          src="/videos/bg.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+        <div className="hero-overlay" />
+        <div className="hero-glow hero-glow-left" />
+        <div className="hero-glow hero-glow-right" />
         <div className="hero-content">
           <h1>Green Impact</h1>
           <p className="subtitle">The home of sustainable business</p>
@@ -153,12 +164,16 @@ export default function Home() {
         </div>
         <div className="cards-grid hub-cards">
           <Link to={toolsHref} className="service-card animate-on-scroll hub-link-card">
-            <div className="card-icon">T</div>
+            <div className="card-icon">
+              <img src="/images/toolbox.png" alt="Toolbox" className="card-icon-image" />
+            </div>
             <h3>Toolbox</h3>
             <p>Open the guided sustainable business tools and questionnaires.</p>
           </Link>
           <Link to={productsHref} className="service-card animate-on-scroll hub-link-card">
-            <div className="card-icon">P</div>
+            <div className="card-icon">
+              <img src="/images/product.avif" alt="Products" className="card-icon-image" />
+            </div>
             <h3>Products</h3>
             <p>Access forms, workshops, application calls, and generated documents.</p>
           </Link>

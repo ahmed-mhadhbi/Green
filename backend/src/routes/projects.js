@@ -26,6 +26,7 @@ const PROJECT_STATUS = ["draft", "submitted", "needs_corrections", "validated"];
 
 function canAccessProject(role, uid, project) {
   if (role === "admin") return true;
+  if (role === "business_support") return true;
   if (role === "mentor") return !project.mentorId || project.mentorId === uid;
   return project.entrepreneurId === uid;
 }

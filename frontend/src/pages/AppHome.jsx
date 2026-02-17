@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 const ROLE_COPY = {
   entrepreneur: "Track progress and complete tools.",
   mentor: "Manage learning resources and review entrepreneur activity.",
+  business_support: "Follow ecosystem activity, projects, and support sessions.",
   admin: "Monitor platform activity and role workflows."
 };
 

@@ -6,6 +6,7 @@ import RegisterPage from "./pages/RegisterPage";
 import JoinUsPage from "./pages/JoinUsPage";
 import EntrepreneurDashboard from "./pages/EntrepreneurDashboard";
 import MentorDashboard from "./pages/MentorDashboard";
+import BusinessSupportDashboard from "./pages/BusinessSupportDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import Layout from "./components/Layout";
 import Home from "./components/Home";
@@ -18,6 +19,7 @@ function DashboardRouter() {
 
   if (!profile) return <div className="centered">Loading profile...</div>;
   if (profile.role === "mentor") return <MentorDashboard />;
+  if (profile.role === "business_support") return <BusinessSupportDashboard />;
   if (profile.role === "admin") return <AdminDashboard />;
   return <EntrepreneurDashboard />;
 }

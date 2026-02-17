@@ -42,7 +42,7 @@ router.get("/users", async (_req, res, next) => {
 router.patch("/users/:uid/role", async (req, res, next) => {
   try {
     const { role } = req.body;
-    const allowed = ["entrepreneur", "mentor", "admin"];
+    const allowed = ["entrepreneur", "mentor", "business_support", "admin"];
     if (!allowed.includes(role)) {
       const err = new Error(`Invalid role. Allowed: ${allowed.join(", ")}`);
       err.status = 400;

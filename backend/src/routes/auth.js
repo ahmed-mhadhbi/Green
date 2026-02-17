@@ -7,7 +7,7 @@ const router = express.Router();
 router.post("/register-profile", authMiddleware, async (req, res, next) => {
   try {
     const { name, role } = req.body;
-    const safeRole = role && ["entrepreneur", "mentor"].includes(role) ? role : "entrepreneur";
+    const safeRole = role && ["entrepreneur", "mentor", "business_support"].includes(role) ? role : "entrepreneur";
 
     const payload = {
       uid: req.user.uid,

@@ -182,6 +182,11 @@ export default function MentorDashboard() {
       {message ? <p className="info">{message}</p> : null}
 
       <section className="card span-2">
+        <h2>Mentor dashboard</h2>
+        <p>Create learning content, review projects, and schedule mentoring sessions.</p>
+      </section>
+
+      <section className="card span-2">
         <h2>Create and manage courses</h2>
         <form className="form-stack" onSubmit={createCourse}>
           <input placeholder="Course title" value={courseForm.title} onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })} required />

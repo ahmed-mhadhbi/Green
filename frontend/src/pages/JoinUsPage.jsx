@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 
 const TRACKS = [
   { key: "mentor", title: "Trainer registration", role: "mentor" },
-  { key: "bso", title: "Business support organization registration", role: "entrepreneur" },
+  { key: "bso", title: "Business support organization registration", role: "business_support" },
   { key: "entrepreneur", title: "Green Entrepreneur registration", role: "entrepreneur" }
 ];
 

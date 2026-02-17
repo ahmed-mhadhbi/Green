@@ -1,6 +1,6 @@
 const { admin, db } = require("../config/firebase");
 
-const ROLES = ["entrepreneur", "mentor", "admin"];
+const ROLES = ["entrepreneur", "mentor", "business_support", "admin"];
 
 async function authMiddleware(req, _res, next) {
   try {

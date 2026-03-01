@@ -1385,8 +1385,8 @@ body {
 }
 
 .footer-credit-image {
-  width: 86px;
-  height: 56px;
+  width: 130px;
+  height: 84px;
   object-fit: contain;
   background: #fff;
   border-radius: 8px;
@@ -1401,8 +1401,8 @@ body {
 }
 
 .footer-partner-image {
-  width: 92px;
-  height: 56px;
+  width: 130px;
+  height: 84px;
   object-fit: contain;
   background: #fff;
   border-radius: 8px;

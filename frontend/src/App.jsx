@@ -13,6 +13,7 @@ import Home from "./components/Home";
 import ToolsPage from "./pages/ToolsPage";
 import ToolQuestionnairePage from "./pages/ToolQuestionnairePage";
 import ProductsPage from "./pages/ProductsPage";
+import HubPlaceholderPage from "./pages/HubPlaceholderPage";
 
 function DashboardRouter() {
   const { profile } = useAuth();
@@ -41,6 +42,11 @@ export default function App() {
       <Route path="/app/tools" element={withAppLayout(<ToolsPage />)} />
       <Route path="/app/tools/:toolKey" element={withAppLayout(<ToolQuestionnairePage />)} />
       <Route path="/app/products" element={withAppLayout(<ProductsPage />)} />
+      <Route path="/hub/fund" element={<HubPlaceholderPage title="Fund" />} />
+      <Route path="/hub/community" element={<HubPlaceholderPage title="Community" />} />
+      <Route path="/hub/policy" element={<HubPlaceholderPage title="Policy Hub" />} />
+      <Route path="/hub/ecosystems" element={<HubPlaceholderPage title="Ecosystems" />} />
+      <Route path="/hub/open-eco-innovation" element={<HubPlaceholderPage title="Open Eco-innovation" />} />
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
   );

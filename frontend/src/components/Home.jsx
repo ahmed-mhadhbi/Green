@@ -177,6 +177,36 @@ export default function Home() {
             <h3>Products</h3>
             <p>Access forms, workshops, application calls, and generated documents.</p>
           </Link>
+          <Link to="/hub/fund" className="service-card animate-on-scroll hub-link-card">
+            <div className="card-icon">
+              <img src="/images/funds.png" alt="Fund" className="card-icon-image" />
+            </div>
+            <h3>Fund</h3>
+          </Link>
+          <Link to="/hub/community" className="service-card animate-on-scroll hub-link-card">
+            <div className="card-icon">
+              <img src="/images/community.png" alt="Community" className="card-icon-image" />
+            </div>
+            <h3>Community</h3>
+          </Link>
+          <Link to="/hub/policy" className="service-card animate-on-scroll hub-link-card">
+            <div className="card-icon">
+              <img src="/images/policy.png" alt="Policy Hub" className="card-icon-image" />
+            </div>
+            <h3>Policy Hub</h3>
+          </Link>
+          <Link to="/hub/ecosystems" className="service-card animate-on-scroll hub-link-card">
+            <div className="card-icon">
+              <img src="/images/ecosystems.png" alt="Ecosystems" className="card-icon-image" />
+            </div>
+            <h3>Ecosystems</h3>
+          </Link>
+          <Link to="/hub/open-eco-innovation" className="service-card animate-on-scroll hub-link-card">
+            <div className="card-icon">
+              <img src="/images/open.png" alt="Open Eco-innovation" className="card-icon-image" />
+            </div>
+            <h3>Open Eco-innovation</h3>
+          </Link>
         </div>
       </section>
 
@@ -257,38 +287,20 @@ export default function Home() {
           <div className="contact-info animate-on-scroll">
             <h2>Contact us</h2>
             <div className="contact-item">
-              <h3>Address</h3>
-              <p>Passeig de la Zona Franca, 107 (Torre Ponent)<br />08038 Barcelona, Espagne</p>
+              <h3>Number</h3>
+              <p>51266459</p>
             </div>
             <div className="contact-item">
-              <h3>Email</h3>
+              <h3>Localisation</h3>
+              <p>Regueb , Sidi Bouzid , Tunis</p>
+            </div>
+            <div className="contact-item">
+              <h3>Mail</h3>
               <p>
-                <a href="mailto:medwaves.arc@gencat.cat">medwaves.arc@gencat.cat</a><br />
-                <a href="mailto:support@theswitchers.org">support@theswitchers.org</a>
+                <a href="mailto:association.rawafed1@gmail.com">association.rawafed1@gmail.com</a>
               </p>
             </div>
           </div>
-          <form
-            className="contact-form animate-on-scroll"
-            onSubmit={(e) => {
-              e.preventDefault();
-              e.target.reset();
-            }}
-          >
-            <div className="form-group">
-              <label htmlFor="name">Username</label>
-              <input type="text" id="name" name="name" required />
-            </div>
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input type="email" id="email" name="email" required />
-            </div>
-            <div className="form-group">
-              <label htmlFor="message">Message</label>
-              <textarea id="message" name="message" required />
-            </div>
-            <button type="submit" className="submit-btn">Send message</button>
-          </form>
         </div>
       </section>
 
@@ -327,7 +339,26 @@ export default function Home() {
           </div>
         </div>
         <div className="footer-bottom">
-          <p>&copy; 2026 GreenImpact | Privacy policy and legal notices</p>
+          <div className="footer-lower">
+            <div className="footer-credits">
+              <div className="footer-credit-item">
+                <p>Developed by rawafed:</p>
+                <img src="/images/x.png" alt="Developed by rawafed" className="footer-credit-image" />
+              </div>
+              <div className="footer-credit-item">
+                <p>Funded by Green impact:</p>
+                <img src="/images/y.jpg" alt="Funded by Green impact" className="footer-credit-image" />
+              </div>
+            </div>
+            <div className="footer-partners">
+              <img src="/images/a.png" alt="Partner a" className="footer-partner-image" />
+              <img src="/images/b.png" alt="Partner b" className="footer-partner-image" />
+              <img src="/images/c.jpg" alt="Partner c" className="footer-partner-image" />
+              <img src="/images/d.jpg" alt="Partner d" className="footer-partner-image" />
+              <img src="/images/e.png" alt="Partner e" className="footer-partner-image" />
+            </div>
+          </div>
+          <p>&copy; 2026 GreenImpact</p>
         </div>
       </footer>
     </div>

@@ -340,22 +340,18 @@ export default function Home() {
         </div>
         <div className="footer-bottom">
           <div className="footer-lower">
-            <div className="footer-credits">
-              <div className="footer-credit-item">
-                <p>Developed by rawafed:</p>
-                <img src="/images/x.png" alt="Developed by rawafed" className="footer-credit-image" />
+            <div className="footer-lower-left">
+              <p>Developed by rawafed:</p>
+              <img src="/images/x.png" alt="Developed by rawafed" className="footer-credit-image" />
+              <p>Funded by Green impact:</p>
+              <img src="/images/y.jpg" alt="Funded by Green impact" className="footer-credit-image" />
+              <div className="footer-partners">
+                <img src="/images/a.png" alt="Partner a" className="footer-partner-image" />
+                <img src="/images/b.png" alt="Partner b" className="footer-partner-image" />
+                <img src="/images/c.jpg" alt="Partner c" className="footer-partner-image" />
+                <img src="/images/d.jpg" alt="Partner d" className="footer-partner-image" />
+                <img src="/images/e.png" alt="Partner e" className="footer-partner-image" />
               </div>
-              <div className="footer-credit-item">
-                <p>Funded by Green impact:</p>
-                <img src="/images/y.jpg" alt="Funded by Green impact" className="footer-credit-image" />
-              </div>
-            </div>
-            <div className="footer-partners">
-              <img src="/images/a.png" alt="Partner a" className="footer-partner-image" />
-              <img src="/images/b.png" alt="Partner b" className="footer-partner-image" />
-              <img src="/images/c.jpg" alt="Partner c" className="footer-partner-image" />
-              <img src="/images/d.jpg" alt="Partner d" className="footer-partner-image" />
-              <img src="/images/e.png" alt="Partner e" className="footer-partner-image" />
             </div>
           </div>
           <p>&copy; 2026 GreenImpact</p>

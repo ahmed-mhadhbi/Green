@@ -96,33 +96,129 @@ export const TOOLS_CATALOG = [
   {
     key: "eco-design-tool",
     title: "Eco-design Tool",
-    description: "Improve product design through lifecycle thinking.",
+    description: "Map the lifecycle, assess hotspots, and define eco-design actions.",
     exportable: false,
     questions: [
       {
-        id: "materialsSelection",
-        label: "How do you select low-impact materials?",
-        description: "This identifies where resource and emissions savings start.",
-        inputType: "textarea"
-      },
-      {
-        id: "lifecycleHotspots",
-        label: "Which lifecycle stages have the biggest impact?",
-        description: "This focuses your design effort on the most critical stages.",
-        inputType: "textarea"
-      },
-      {
-        id: "repairability",
-        label: "How repairable and reusable is your solution?",
-        description: "This assesses circularity and product longevity.",
-        inputType: "textarea"
-      },
-      {
-        id: "designPriority",
-        label: "Which eco-design priority is most urgent?",
-        description: "This helps choose the first practical action to implement.",
+        id: "eco_scope",
+        label: "What are you going to eco-design?",
+        description: "This fixes the scope of the work around either a product or a service.",
         inputType: "select",
-        options: ["Material reduction", "Energy efficiency", "Repairability", "End-of-life recovery"]
+        options: ["Product", "Service"]
+      },
+      {
+        id: "eco_team_setup",
+        label: "Who is involved in the eco-design work?",
+        description: "This clarifies the mix of roles, knowledge, and coordination needed for the journey.",
+        inputType: "textarea"
+      },
+      {
+        id: "eco_project_name",
+        label: "What is the name of the eco-design project?",
+        description: "This gives the redesign effort a clear identity and makes the scope easier to communicate.",
+        inputType: "text"
+      },
+      {
+        id: "eco_project_overview",
+        label: "What do you want to eco-design?",
+        description: "This describes the current offer and the part of it that will be redesigned.",
+        inputType: "textarea"
+      },
+      {
+        id: "eco_context_forces",
+        label: "Which forces of change matter most?",
+        description: "This identifies the external trends and risks that should shape your eco-design strategy.",
+        inputType: "textarea"
+      },
+      {
+        id: "eco_sustainable_vision",
+        label: "How would your ideal sustainable product or service look?",
+        description: "This sets the target state you want the redesign to move toward.",
+        inputType: "textarea"
+      },
+      {
+        id: "eco_lifecycle_raw_materials",
+        label: "How do raw materials and resources work today?",
+        description: "This captures the starting point for the raw materials stage of the lifecycle.",
+        inputType: "textarea"
+      },
+      {
+        id: "eco_lifecycle_production",
+        label: "How is the product produced today?",
+        description: "This documents the current production process, inputs, and impacts.",
+        inputType: "textarea"
+      },
+      {
+        id: "eco_lifecycle_packaging",
+        label: "How is the product packaged today?",
+        description: "This describes the packaging choices and whether they can be improved.",
+        inputType: "textarea"
+      },
+      {
+        id: "eco_lifecycle_distribution",
+        label: "How is the product distributed today?",
+        description: "This shows the transport and logistics setup that supports delivery.",
+        inputType: "textarea"
+      },
+      {
+        id: "eco_lifecycle_use",
+        label: "How is the product used and maintained today?",
+        description: "This covers use-phase energy, maintenance, spare parts, and customer practices.",
+        inputType: "textarea"
+      },
+      {
+        id: "eco_lifecycle_end_of_life",
+        label: "What happens at end of life today?",
+        description: "This clarifies disposal, reuse, recycling, and recovery options.",
+        inputType: "textarea"
+      },
+      {
+        id: "eco_assessment_raw_materials",
+        label: "What is the room for improvement in raw materials?",
+        description: "This scores how far the raw materials stage is from the sustainable vision.",
+        inputType: "select",
+        options: ["1", "2", "3", "4", "5", "No answer"]
+      },
+      {
+        id: "eco_assessment_production",
+        label: "What is the room for improvement in production?",
+        description: "This scores how far the production stage is from the sustainable vision.",
+        inputType: "select",
+        options: ["1", "2", "3", "4", "5", "No answer"]
+      },
+      {
+        id: "eco_assessment_packaging",
+        label: "What is the room for improvement in packaging?",
+        description: "This scores how far the packaging stage is from the sustainable vision.",
+        inputType: "select",
+        options: ["1", "2", "3", "4", "5", "No answer"]
+      },
+      {
+        id: "eco_assessment_distribution",
+        label: "What is the room for improvement in distribution?",
+        description: "This scores how far the distribution stage is from the sustainable vision.",
+        inputType: "select",
+        options: ["1", "2", "3", "4", "5", "No answer"]
+      },
+      {
+        id: "eco_assessment_use",
+        label: "What is the room for improvement in use and maintenance?",
+        description: "This scores how far the use stage is from the sustainable vision.",
+        inputType: "select",
+        options: ["1", "2", "3", "4", "5", "No answer"]
+      },
+      {
+        id: "eco_assessment_end_of_life",
+        label: "What is the room for improvement at end of life?",
+        description: "This scores how far the end-of-life stage is from the sustainable vision.",
+        inputType: "select",
+        options: ["1", "2", "3", "4", "5", "No answer"]
+      },
+      {
+        id: "eco_action_priority",
+        label: "Which eco-design priorities should move into the action plan?",
+        description: "This turns the assessment into concrete priorities for action.",
+        inputType: "textarea"
       }
     ]
   },

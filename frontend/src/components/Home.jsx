@@ -182,30 +182,35 @@ export default function Home() {
               <img src="/images/funds.png" alt="Fund" className="card-icon-image" />
             </div>
             <h3>Fund</h3>
+            <p>Connecting sustainable businesses with financial actors in the Mediterranean</p>
           </Link>
           <Link to="/hub/community" className="service-card animate-on-scroll hub-link-card">
             <div className="card-icon">
               <img src="/images/community.png" alt="Community" className="card-icon-image" />
             </div>
             <h3>Community</h3>
+            <p>Meet and join the inspiring community of sustainable businesses across the Mediterranean</p>
           </Link>
           <Link to="/hub/policy" className="service-card animate-on-scroll hub-link-card">
             <div className="card-icon">
               <img src="/images/policy.png" alt="Policy Hub" className="card-icon-image" />
             </div>
             <h3>Policy Hub</h3>
+            <p>Learn more about enabling policies for sustainable busniesses in the Mediterranean</p>
           </Link>
           <Link to="/hub/ecosystems" className="service-card animate-on-scroll hub-link-card">
             <div className="card-icon">
               <img src="/images/ecosystems.png" alt="Ecosystems" className="card-icon-image" />
             </div>
             <h3>Ecosystems</h3>
+            <p>Advancing sutainable and circular business development ecosystems in the Mediterranean</p>
           </Link>
           <Link to="/hub/open-eco-innovation" className="service-card animate-on-scroll hub-link-card">
             <div className="card-icon">
               <img src="/images/open.png" alt="Open Eco-innovation" className="card-icon-image" />
             </div>
             <h3>Open Eco-innovation</h3>
+            <p>Connecting companies and entrepreneurs in the Mediterranean</p>
           </Link>
         </div>
       </section>

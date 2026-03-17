@@ -229,7 +229,7 @@ export default function Home() {
               In Mediterranean countries, we set up National Partnerships gathered under a common community of practices Business Support Organizations which targets sustainable entrepreneurs and companies.
             </p>
             <p>
-              Our main targets are The Switchers, businesses implementing innovative ecological and social solutions that contribute to a switch to sustainable and fair consumption and production models.
+              Our main targets are the Green Impact community, businesses implementing innovative ecological and social solutions that contribute to a switch to sustainable and fair consumption and production models.
             </p>
           </div>
 
@@ -250,7 +250,7 @@ export default function Home() {
             />
           </div>
           <div>
-            <h4>We provide The Switchers with a comprehensive set of services to design,</h4> <h4>develop and accelerate their green and circular businesses:</h4><br />
+            <h4>We provide The Green Impact community with a comprehensive set of services to design,</h4> <h4>develop and accelerate their green and circular businesses:</h4><br />
             <img
               src="/images/about2.png"
               alt="Green entrepreneurship"
@@ -268,14 +268,14 @@ export default function Home() {
         <section className="stats" ref={statsRef}>
           <div className="stats-grid">
             {[
-              { number: 3747, label: "Entrepreneurs", desc: "Persons supported to develop their Sustainable Businesses." },
-              { number: 632, label: "Trainers", desc: "Experts trained in Sustainable Business Model Development." },
-              { number: 125, label: "BSO", desc: "Business Support Organizations members of the Switchers Support Programme." },
-              { number: 400, label: "Members", desc: "Eco-innovators of The GreenImpact community." },
-              { number: "43%", label: "are women", desc: "% of supported entrepreneurs that are women" },
-              { number: "85%", label: "are satisfied", desc: "% of entrepreneurs that are satisfied with the supporting services and tools" },
-              { number: 162, label: "Sources", desc: "Sources of financing available in our database" },
-              { number: 3.9, label: "Million", desc: "Million EUR raised by The Green Impact Fund" }
+              { number: 0, label: "Entrepreneurs", desc: "Persons supported to develop their Sustainable Businesses." },
+              { number: 0, label: "Trainers", desc: "Experts trained in Sustainable Business Model Development." },
+              { number: 0, label: "BSO", desc: "Business Support Organizations members of the Green Impact Support Programme." },
+              { number: 0, label: "Members", desc: "Eco-innovators of The GreenImpact community." },
+              { number: "0%", label: "are women", desc: "% of supported entrepreneurs that are women" },
+              { number: "0%", label: "are satisfied", desc: "% of entrepreneurs that are satisfied with the supporting services and tools" },
+              { number: 0, label: "Sources", desc: "Sources of financing available in our database" },
+              { number: 0, label: "Million", desc: "Million EUR raised by The Green Impact Fund" }
             ].map((stat, idx) => (
               <div key={idx} className="stat-item">
                 <span className="stat-number">{stat.number}</span>
@@ -313,7 +313,6 @@ export default function Home() {
         <div className="footer-content">
           <div className="footer-section">
             <h3>Green Impact</h3>
-            <p>An initiative of the UN Environment MAP Regional Activity Centre.</p>
           </div>
           <div className="footer-section">
             <h3>Quick links</h3>

@@ -2680,5 +2680,293 @@ body {
   }
 }
 
+.gbp-tool {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.gbp-section-card,
+.gbp-hero-card {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.gbp-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.gbp-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.7rem;
+  color: #4b6b5b;
+  font-weight: 600;
+}
+
+.gbp-hero-grid,
+.gbp-media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: center;
+}
+
+.gbp-media-stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.gbp-copy-stack {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.gbp-media-frame {
+  margin: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #dbe9e2;
+  background: #f8fcfa;
+}
+
+.gbp-media-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.gbp-media-row .gbp-media-frame {
+  flex: 1 1 calc(50% - 0.75rem);
+  max-width: calc(50% - 0.75rem);
+}
+
+.gbp-media-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gbp-callout {
+  border: 1px solid #bfdccb;
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  background: linear-gradient(120deg, #edf9f1 0%, #f8fcfa 100%);
+  display: grid;
+  gap: 0.4rem;
+}
+
+.gbp-callout p {
+  margin: 0;
+}
+
+.gbp-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.gbp-subsection {
+  display: grid;
+  gap: 0.65rem;
+  padding-top: 0.2rem;
+}
+
+.gbp-quote {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 12px;
+  border: 1px dashed #c9ddd1;
+  background: #f5faf7;
+  color: #2f4f43;
+}
+
+.gbp-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.gbp-funding-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.gbp-funding-card {
+  border: 1px solid #dbe9e2;
+  border-radius: 14px;
+  padding: 0.85rem;
+  background: #fbfffc;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.gbp-funding-card h4,
+.gbp-funding-card p {
+  margin: 0;
+}
+
+.gbp-rocket-frame {
+  max-width: 25%;
+  justify-self: end;
+  align-self: center;
+}
+
+@media (max-width: 960px) {
+  .gbp-hero-grid,
+  .gbp-media-grid,
+  .gbp-grid-2,
+  .gbp-funding-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gbp-media-row .gbp-media-frame {
+    max-width: 100%;
+    flex-basis: 100%;
+  }
+
+  .gbp-rocket-frame {
+    max-width: 60%;
+    justify-self: center;
+  }
+}
+
+.atm-tool {
+  display: grid;
+  gap: 1.6rem;
+}
+
+.atm-hero-card,
+.atm-section-card {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.atm-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.atm-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.7rem;
+  color: #5c6b4b;
+  font-weight: 600;
+}
+
+.atm-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.atm-steps {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.atm-callout {
+  border: 1px solid #d8e0c7;
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  background: linear-gradient(120deg, #f4f8ec 0%, #fbfdf7 100%);
+  display: grid;
+  gap: 0.4rem;
+}
+
+.atm-callout p {
+  margin: 0;
+}
+
+.atm-module-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.atm-module-card {
+  border: 1px solid #e0e7d4;
+  border-radius: 16px;
+  padding: 1rem;
+  background: #fbfdf9;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.atm-module-card h4,
+.atm-module-card p {
+  margin: 0;
+}
+
+.atm-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.atm-template-card {
+  margin: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #e0e7d4;
+  background: #f9fcf4;
+  display: grid;
+}
+
+.atm-template-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.atm-template-card figcaption {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: #536248;
+  background: #f1f5e8;
+}
+
+.atm-glossary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.atm-glossary-item {
+  border: 1px solid #e0e7d4;
+  border-radius: 12px;
+  padding: 0.6rem 0.75rem;
+  background: #fbfdf9;
+}
+
+.atm-glossary-item summary {
+  cursor: pointer;
+}
+
+.atm-glossary-item p {
+  margin: 0.5rem 0 0;
+}
+
+@media (max-width: 960px) {
+  .atm-module-grid,
+  .atm-grid-2,
+  .atm-glossary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 
 

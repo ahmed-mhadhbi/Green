@@ -3,12 +3,16 @@ import dayjs from "dayjs";
 import { Link, useParams } from "react-router-dom";
 import { apiRequest } from "../api/client";
 import EcoDesignToolView from "../components/EcoDesignToolView";
+import GreenBusinessPlanView from "../components/GreenBusinessPlanView";
+import AccessToMarketView from "../components/AccessToMarketView";
 import { useAuth } from "../context/AuthContext";
 import { getToolByKey } from "../data/toolsCatalog";
 import { calculateToolProgress, getToolProjectType, resolveAnswersForTool, saveLocalToolAnswers } from "../utils/toolProgress";
 
 const GBM_KEY = "green-business-model";
 const ECO_DESIGN_KEY = "eco-design-tool";
+const GBP_KEY = "green-business-plan";
+const ACCESS_TO_MARKET_KEY = "access-to-market";
 const GBM_PAGES = [
   { n: 1, title: "Step 1: Sketch your business idea", q: [["idea", "What is your initial business idea?"], ["offer", "What will you offer?"], ["customers", "Who are your customers?"], ["partners", "Who are your partners?"]] },
   { n: 2, title: "Step 1: Identify problems and needs", domains: [{ t: "Environmental challenges", q: [["env", "Which environmental challenges are tackled?"]] }, { t: "Social challenges", q: [["social", "Which social challenges are tackled?"]] }, { t: "Market needs", q: [["market", "What are the biggest customer needs?"]] }, { t: "Team motivations", q: [["team", "What motivates the team?"]] }] },
@@ -84,6 +88,8 @@ export default function ToolQuestionnairePage() {
   const [vpRows, setVpRows] = useState(1);
   const isGbm = tool?.key === GBM_KEY;
   const isEcoDesign = tool?.key === ECO_DESIGN_KEY;
+  const isGbp = tool?.key === GBP_KEY;
+  const isAccessToMarket = tool?.key === ACCESS_TO_MARKET_KEY;
 
   useEffect(() => {
     async function load() {
@@ -528,7 +534,13 @@ export default function ToolQuestionnairePage() {
       </section>
 
       <section className="card form-stack">
-        {isEcoDesign ? <EcoDesignToolView answers={answers} setA={setA} /> : !isGbm ? tool.questions.map((q) => (
+        {isEcoDesign ? (
+          <EcoDesignToolView answers={answers} setA={setA} />
+        ) : isGbp ? (
+          <GreenBusinessPlanView answers={answers} setA={setA} />
+        ) : isAccessToMarket ? (
+          <AccessToMarketView answers={answers} setA={setA} />
+        ) : !isGbm ? tool.questions.map((q) => (
           <div key={q.id} className="question-card">
             <label htmlFor={q.id}><strong>{q.label}</strong></label>
             <p className="question-description">Why this is asked: {q.description}</p>

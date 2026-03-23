@@ -30,9 +30,185 @@ const GBM_PAGES = [
   { n: 13, title: "Step 2: 11 Pivoting value proposition", q: [["pivot_vp", "Reword value proposition"], ["pivot_stakeholders", "Stakeholders updates"], ["pivot_segment", "Customer segment updates"]] },
   { n: 14, title: "Step 2: 12a Customer channels and relationships", dynamic: "journeyStages" },
   { n: 15, title: "Step 2: 13 Key activities and resources", domains: [{ t: "Key activities", q: [["act_problem", "Problem solving"], ["act_production", "Production"], ["act_platform", "Platform/network/sales"], ["act_supply", "Supply chain management"]] }, { t: "Key resources", q: [["res_human", "Human capital"], ["res_physical", "Physical capital"], ["res_intel", "Intellectual and digital capital"], ["res_fin", "Financial capital"]] }] },
-  { n: 16, title: "Step 2: 14 Ecodesign your business", q: [["eco_type", "Business offers (Product/Service)"], ["eco_materials", "Materials & resources"], ["eco_production", "Production"], ["eco_packaging", "Packaging & distribution"], ["eco_use", "Use & maintenance"], ["eco_eol", "End of life management"], ["eco_service", "Service"], ["eco_sales", "Sales & communication"], ["eco_infra", "Infrastructure"], ["eco_result", "Ecodesign result"]] },
-  { n: 17, title: "Step 2: 15-17 Summary / Cost structure / Revenue streams", q: [["s15_summary", "Summary of key activities/resources/channels"], ["s16_cost", "Cost structure"], ["s17_rev", "Revenue streams"]] },
-  { n: 18, title: "Step 2: 18 Final summary", plus: ["s16_cost", "s17_rev"], star: [["Mission statement", "mission"], ["Vision statement", "vision"]], q: [] }
+  {
+    n: 16,
+    title: "Step 2: 14a Ecodesign your business",
+    display: "14a - Ecodesign your business",
+    copy: [
+      "After defining the key activities and resources, ecodesign the best solution to deliver your value. This exercise helps you rethink those activities and resources to assess and improve environmental performance.",
+      "The ecodesign process is structured into three steps (ecodesign cards): evaluate and gather info, score, and improve.",
+      "Before starting, select whether your business offers a product (and its related services) or a service only.",
+      "To improve your score and further ecodesign your product/service, edit the lifecycle stages and save updates to refresh results."
+    ],
+    q: [["eco_type", "Business offers (Product/Service)"], ["eco_materials", "Materials & resources"], ["eco_production", "Production"], ["eco_packaging", "Packaging & distribution"], ["eco_use", "Use & maintenance"], ["eco_eol", "End of life management"], ["eco_service", "Service"], ["eco_sales", "Sales & communication"], ["eco_infra", "Infrastructure"], ["eco_result", "Ecodesign result"]]
+  },
+  {
+    n: 17,
+    title: "Step 2: 15 Summary of key activities/resources and customer relationships/channels",
+    display: "15 - Summary of key activities and resources and customer relationships and channels",
+    copy: [
+      "Revise the content according to the results of the eco-design exercise.",
+      "Key activities and resources are reported from Exercise 13. Update them based on the ecodesign results.",
+      "Customer relationships and channels should reflect what you identified in the customer map."
+    ],
+    q: [
+      ["s15_key_activities", "Key activities (summary)"],
+      ["s15_key_resources", "Key resources (summary)"],
+      ["s15_relationships", "Customer relationships"],
+      ["s15_channels", "Customer channels"],
+      ["s15_summary", "Overall summary of activities, resources, relationships, and channels"]
+    ]
+  },
+  {
+    n: 18,
+    title: "Step 2: 16 Cost structure",
+    display: "16 - Cost structure",
+    copy: [
+      "Brainstorm: go back to Exercise 13 to review activities and resources. List the investment costs to start the business and the most important costs inherent to your model (fixed and variable).",
+      "Price: estimate costs for each item. Transform: reduce fixed costs as much as possible. Sum up the total fixed and variable costs. Recap anything that needs special attention."
+    ],
+    q: [
+      ["s16_investment_costs", "Investment costs to start the business"],
+      ["s16_investment_costs_estimate", "Estimated investment costs"],
+      ["s16_fixed_costs", "Most important fixed costs"],
+      ["s16_fixed_costs_estimate", "Estimated fixed costs"],
+      ["s16_variable_costs", "Most important variable costs"],
+      ["s16_variable_costs_estimate", "Estimated variable costs"],
+      ["s16_fixed_costs_strategy", "Strategy to reduce fixed costs"],
+      ["s16_total_costs", "Total fixed and variable costs (sum up)"],
+      ["s16_recap", "Recap: special attention items"],
+      ["s16_cost", "Cost structure summary"]
+    ]
+  },
+  {
+    n: 19,
+    title: "Step 2: 17 Revenue streams",
+    display: "17 - Revenue stream",
+    copy: [
+      "List the products and/or services you will deliver. Select a revenue model and assign a price for each stream.",
+      "Describe the characteristics of each revenue stream, rank their importance, and link them to customer segments and channels."
+    ],
+    q: [
+      ["s17_products_services", "Products and services you are offering"],
+      ["s17_revenue_models", "Revenue model and pricing for each stream"],
+      ["s17_revenue_characteristics", "Characteristics and ranking of revenue streams"],
+      ["s17_additional_revenue", "Other ways to increase revenue"],
+      ["s17_rev", "Revenue streams summary"]
+    ]
+  },
+  {
+    n: 20,
+    title: "Step 2: 18 Summary of the cost structure and revenue streams",
+    display: "18 - Summary of the cost structure and revenue streams",
+    copy: [
+      "Using the information gathered through Exercises 16 and 17, summarize your findings on the cost structure and revenue streams. Be clear and make sure you have the right numbers."
+    ],
+    plus: ["s16_cost", "s17_rev"],
+    q: [["s18_summary_cost_revenue", "Summary of cost structure and revenue streams"]]
+  },
+  {
+    n: 21,
+    title: "Step 3: Test",
+    display: "Step 3 - Test",
+    copy: [
+      "It is time for another test. You have a prototype, but you need to validate if it satisfies customer expectations, whether delivery works as planned, and if customers are willing to pay the price.",
+      "Engage with customers and stakeholders to gather qualitative and quantitative feedback. The test is divided into the following exercises."
+    ],
+    q: []
+  },
+  {
+    n: 22,
+    title: "Design your test",
+    display: "19 - Design your test!",
+    copy: [
+      "Identify the hypotheses that need validation (availability to pay, interest, delivery service, acceptance of products, etc.).",
+      "Define the questions you need to raise and the ways you will validate them."
+    ],
+    q: [
+      ["test_hypotheses", "Hypotheses to validate"],
+      ["test_questions", "Questions to validate the hypotheses"],
+      ["test_where", "Where are you going to test your prototype?"],
+      ["test_early_adopters", "Who are your early adopters (name, number)?"],
+      ["test_feedback_collection", "How will you collect their feedback?"]
+    ]
+  },
+  {
+    n: 23,
+    title: "Design your test (plan)",
+    display: "19a - Design your test!",
+    q: [["test_plan", "How are you planning to get those hypotheses tested?"]]
+  },
+  {
+    n: 24,
+    title: "Carrying out the test and results",
+    display: "19b - Carrying out the test and get results",
+    copy: [
+      "Go out to the streets, observe, and ask your first customers, stakeholders, and other people involved. Capture their satisfaction with price, quality, emotions, and encountered problems.",
+      "Record findings using the discovery card and summarize your learnings."
+    ],
+    q: [
+      ["test_participant_data", "Participant's data"],
+      ["test_surprises", "What surprised you about participant responses?"],
+      ["test_matters_most", "Which things matter most to the participant?"],
+      ["test_main_themes", "Main themes or learnings"],
+      ["test_new_topics", "New topics or questions to explore"],
+      ["test_notes", "Notes"],
+      ["test_learnings", "What did I learn about...?"],
+      ["test_recap_problems", "Recap: problems and needs identified"],
+      ["test_recap_objectives", "Set objectives based on findings"],
+      ["test_recap_indicators", "Measure progress: indicators (optional)"]
+    ]
+  },
+  {
+    n: 25,
+    title: "Customer satisfaction",
+    display: "19c - Customer satisfaction",
+    copy: [
+      "Use the Satisfaction Card to collect specific information about customer satisfaction.",
+      "Rate satisfaction from 1 (lowest) to 5 (highest) for the key aspects you choose, and record comments."
+    ],
+    q: [
+      ["test_satisfaction_aspects", "Aspects you evaluated (price, quality, emotions, etc.)"],
+      ["test_satisfaction_rating", "Satisfaction rating (1-5)"],
+      ["test_satisfaction_comments", "Customer comments"]
+    ]
+  },
+  {
+    n: 26,
+    title: "Step 4: Implement",
+    display: "Step 4 - Implement",
+    copy: [
+      "After validating the model, carefully plan the development and management of your business and then proceed with operations.",
+      "A multi-dimensional approach to planning touches every major area of the business and helps you manage day-to-day operations while pursuing long-term objectives."
+    ],
+    q: []
+  },
+  {
+    n: 27,
+    title: "Step 5: Measure and improve",
+    display: "Step 5 - Measure and improve",
+    copy: [
+      "Green entrepreneurship tackles environmental and social challenges while providing fair value to partners.",
+      "In the execution phase, regularly measure progress toward objectives and reinvent where necessary through impact measurement and continuous improvement."
+    ],
+    q: []
+  },
+  {
+    n: 28,
+    title: "Indicators",
+    display: "20 - Indicators",
+    copy: [
+      "You are running your business, but do you know whether you are achieving your objectives? Measurement systems help you track progress and improve.",
+      "Use your earlier project indicators, environmental performance indicators, and context analysis to set measurement parameters."
+    ],
+    q: [
+      ["indicators_project", "Project indicators (overall)"],
+      ["indicators_social", "Project indicators - social challenges"],
+      ["indicators_customer", "Project indicators - customer needs"],
+      ["indicators_team", "Project indicators - team motivators"],
+      ["indicators_environmental", "Environmental performance indicators"]
+    ]
+  }
 ];
 
 const cardFields = [["segment", "Segment"], ["generic", "Generic description"], ["pains", "Pains"], ["gains", "Gains"], ["jobs", "Functions/jobs to cover"]];
@@ -259,7 +435,7 @@ export default function ToolQuestionnairePage() {
         const pdfStakeholderRows = Math.max(1, Number(answers.__stakeholderRows || stakeholderRows || 1));
         const pdfVpRows = Math.max(1, Number(answers.__vpRows || vpRows || 1));
         return GBM_PAGES.map((pageDef) => ({
-          title: `${pageDef.n}. ${pageDef.title}`,
+          title: pageDef.display || `${pageDef.n}. ${pageDef.title}`,
           items: buildQs(pageDef, pdfCards, pdfStages, pdfStakeholderRows, pdfVpRows).map((q) => ({
             label: q.label,
             value: persisted[q.id]
@@ -614,11 +790,19 @@ export default function ToolQuestionnairePage() {
   }
 
   function renderGbmPage() {
+    const pageLabel = page.display || `${page.n}. ${page.title}`;
     return (
       <>
         <div className="question-card">
-          <label><strong>{page.n}. {page.title}</strong></label>
+          <label><strong>{pageLabel}</strong></label>
         </div>
+        {(page.copy || []).length ? (
+          <div className="question-card">
+            {page.copy.map((text, idx) => (
+              <p key={`${page.n}-copy-${idx}`} className="question-description">{text}</p>
+            ))}
+          </div>
+        ) : null}
         {page.n === 8 ? renderPage8StakeholderMap() : null}
         {page.n === 9 ? renderPage9Customers() : null}
         {page.n === 10 ? renderPage10Canvas() : null}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
+import { jsPDF } from "jspdf";
 import { Link, useParams } from "react-router-dom";
 import { apiRequest } from "../api/client";
 import EcoDesignToolView from "../components/EcoDesignToolView";
@@ -47,6 +48,7 @@ const ecoCards = [
   ["eco_infra", "Infrastructure"]
 ];
 const filled = (v) => String(v || "").trim().length > 0;
+const EMPTY_ANSWER = "(not answered yet)";
 
 function buildQs(page, cards, stages, stakeholderRows, vpRows) {
   if (!page) return [];
@@ -182,6 +184,116 @@ export default function ToolQuestionnairePage() {
     a.download = `GBM-${dayjs().format("YYYY-MM-DD")}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  function downloadAnswersPdf() {
+    if (!tool) return;
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 48;
+    const contentWidth = pageWidth - margin * 2;
+    const lineHeight = 14;
+    let y = margin;
+
+    const safeValue = (value) => {
+      const text = value === undefined || value === null ? "" : String(value).trim();
+      return text.length ? text : EMPTY_ANSWER;
+    };
+
+    const ensureSpace = (height) => {
+      if (y + height > pageHeight - margin) {
+        doc.addPage();
+        y = margin;
+      }
+    };
+
+    const addLines = (lines, { bold = false, size = 11, color = [31, 41, 55], spacing = 6 } = {}) => {
+      doc.setFont("helvetica", bold ? "bold" : "normal");
+      doc.setFontSize(size);
+      doc.setTextColor(color[0], color[1], color[2]);
+      ensureSpace(lines.length * lineHeight + spacing);
+      doc.text(lines, margin, y);
+      y += lines.length * lineHeight + spacing;
+    };
+
+    const addParagraph = (text, options) => {
+      if (!text) return;
+      const lines = doc.splitTextToSize(text, contentWidth);
+      addLines(lines, options);
+    };
+
+    const addQuestion = ({ label, value, description }) => {
+      const labelLines = doc.splitTextToSize(label, contentWidth);
+      const valueLines = doc.splitTextToSize(safeValue(value), contentWidth);
+      const descLines = description ? doc.splitTextToSize(description, contentWidth) : [];
+      const height = (labelLines.length + valueLines.length + descLines.length) * lineHeight + 14;
+      ensureSpace(height);
+      addLines(labelLines, { bold: true, size: 12, spacing: 4 });
+      if (description) {
+        addLines(descLines, { size: 9, color: [100, 116, 139], spacing: 6 });
+      }
+      addLines(valueLines, { size: 11, spacing: 10 });
+    };
+
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, pageWidth, 84, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text(tool.title, margin, 40);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.text(`Generated ${dayjs().format("YYYY-MM-DD HH:mm")}`, margin, 62);
+
+    y = 104;
+    addParagraph(`Completion: ${progress.percent}% (${progress.answeredCount}/${progress.totalCount} answered)`, { size: 10, color: [71, 85, 105] });
+    if (tool.description) {
+      addParagraph(tool.description, { size: 10, color: [71, 85, 105] });
+    }
+
+    const sections = (() => {
+      if (isGbm) {
+        const pdfCards = Math.max(1, Number(answers.__cards || cards || 1));
+        const pdfStages = Math.max(1, Number(answers.__stages || stages || 1));
+        const pdfStakeholderRows = Math.max(1, Number(answers.__stakeholderRows || stakeholderRows || 1));
+        const pdfVpRows = Math.max(1, Number(answers.__vpRows || vpRows || 1));
+        return GBM_PAGES.map((pageDef) => ({
+          title: `${pageDef.n}. ${pageDef.title}`,
+          items: buildQs(pageDef, pdfCards, pdfStages, pdfStakeholderRows, pdfVpRows).map((q) => ({
+            label: q.label,
+            value: persisted[q.id]
+          }))
+        }));
+      }
+      return [
+        {
+          title: "Answers",
+          items: (tool.questions || []).map((q) => ({
+            label: q.label,
+            description: q.description,
+            value: persisted[q.id]
+          }))
+        }
+      ];
+    })();
+
+    sections.forEach((section) => {
+      ensureSpace(32);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.setTextColor(15, 23, 42);
+      doc.text(section.title, margin, y);
+      y += 10;
+      doc.setDrawColor(203, 213, 225);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 16;
+
+      (section.items || []).forEach((item) => addQuestion(item));
+    });
+
+    const safeTitle = tool.title.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
+    doc.save(`${safeTitle || tool.key}-${dayjs().format("YYYY-MM-DD")}.pdf`);
   }
 
   function renderStandardInput(q) {
@@ -550,6 +662,7 @@ export default function ToolQuestionnairePage() {
 
         <div className="inline">
           <button className="btn primary" onClick={saveAnswers}>Save answers</button>
+          <button className="btn" onClick={downloadAnswersPdf}>Download PDF</button>
           {tool.key === GBM_KEY ? <button className="btn" onClick={downloadGbmJson}>Download GBM JSON</button> : null}
           <Link to="/app/tools" className="btn">Back to tools</Link>
         </div>

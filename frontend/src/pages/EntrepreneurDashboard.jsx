@@ -21,7 +21,9 @@ export default function EntrepreneurDashboard() {
   const [learning, setLearning] = useState([]);
   const [projects, setProjects] = useState([]);
   const [sessions, setSessions] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [message, setMessage] = useState("");
+  const [joinCode, setJoinCode] = useState("");
 
   const [newProject, setNewProject] = useState({
     title: "",
@@ -29,17 +31,19 @@ export default function EntrepreneurDashboard() {
   });
 
   async function loadAll() {
-    const [coursesRes, learningRes, projectsRes, sessionsRes] = await Promise.all([
+    const [coursesRes, learningRes, projectsRes, sessionsRes, groupsRes] = await Promise.all([
       apiRequest("/courses", { token }),
       apiRequest("/courses/my/learning", { token }),
       apiRequest("/projects/my", { token }),
-      apiRequest("/sessions/my", { token })
+      apiRequest("/sessions/my", { token }),
+      apiRequest("/groups/my", { token })
     ]);
 
     setCourses(coursesRes.courses || []);
     setLearning(learningRes.learning || []);
     setProjects(projectsRes.projects || []);
     setSessions(sessionsRes.sessions || []);
+    setGroups(groupsRes.groups || []);
   }
 
   useEffect(() => {
@@ -90,6 +94,22 @@ export default function EntrepreneurDashboard() {
     });
     setNewProject({ title: "", type: "BMC" });
     setMessage("Project created.");
+    await loadAll();
+  }
+
+  async function joinGroup(e) {
+    e.preventDefault();
+    if (!joinCode.trim()) {
+      setMessage("Please enter a group code.");
+      return;
+    }
+    await apiRequest("/groups/join", {
+      method: "POST",
+      token,
+      body: { code: joinCode.trim() }
+    });
+    setJoinCode("");
+    setMessage("Joined group.");
     await loadAll();
   }
 
@@ -159,6 +179,31 @@ export default function EntrepreneurDashboard() {
                 </div>
               ))}
               <button className="btn" onClick={() => enroll(course.id)}>Enroll</button>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="card span-2">
+        <h2>Mentor groups</h2>
+        <form onSubmit={joinGroup} className="inline">
+          <input placeholder="Enter group code" value={joinCode} onChange={(e) => setJoinCode(e.target.value)} />
+          <button className="btn primary">Join</button>
+        </form>
+        {groups.length === 0 ? <p>No groups joined yet.</p> : null}
+        <div className="grid-2">
+          {groups.map((item) => (
+            <article key={item.group?.id || item.id} className="tile">
+              <h3>{item.group?.title || item.title}</h3>
+              <p>{item.group?.description || item.description}</p>
+              {(item.group?.lessons || item.lessons || []).map((lesson, idx) => (
+                <div key={`${item.group?.id || item.id}-lesson-${idx}`} className="module">
+                  <p>{idx + 1}. {lesson.title}</p>
+                  {lesson.content ? <p>{lesson.content}</p> : null}
+                  {lesson.videoUrl ? <a href={lesson.videoUrl} target="_blank" rel="noreferrer">Video</a> : null}
+                  {lesson.documentUrl ? <a href={lesson.documentUrl} target="_blank" rel="noreferrer">Download doc</a> : null}
+                </div>
+              ))}
             </article>
           ))}
         </div>

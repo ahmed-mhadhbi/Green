@@ -12,12 +12,20 @@ const emptyModule = {
   documentUrl: ""
 };
 
+const emptyLesson = {
+  title: "",
+  content: "",
+  videoUrl: "",
+  documentUrl: ""
+};
+
 export default function MentorDashboard() {
   const { token } = useAuth();
 
   const [courses, setCourses] = useState([]);
   const [projects, setProjects] = useState([]);
   const [sessions, setSessions] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [message, setMessage] = useState("");
   const [uploadResult, setUploadResult] = useState(null);
 
@@ -28,6 +36,12 @@ export default function MentorDashboard() {
     level: "beginner",
     learningPath: "green",
     modules: [{ ...emptyModule }]
+  });
+
+  const [groupForm, setGroupForm] = useState({
+    title: "",
+    description: "",
+    lessons: [{ ...emptyLesson }]
   });
 
   const [sessionForm, setSessionForm] = useState({
@@ -41,15 +55,17 @@ export default function MentorDashboard() {
   const [resourceFile, setResourceFile] = useState(null);
 
   async function loadAll() {
-    const [coursesRes, projectsRes, sessionsRes] = await Promise.all([
+    const [coursesRes, projectsRes, sessionsRes, groupsRes] = await Promise.all([
       apiRequest("/courses/my/learning", { token }),
       apiRequest("/projects/my", { token }),
-      apiRequest("/sessions/my", { token })
+      apiRequest("/sessions/my", { token }),
+      apiRequest("/groups/my", { token })
     ]);
 
     setCourses(coursesRes.courses || []);
     setProjects(projectsRes.projects || []);
     setSessions(sessionsRes.sessions || []);
+    setGroups(groupsRes.groups || []);
   }
 
   useEffect(() => {
@@ -73,6 +89,25 @@ export default function MentorDashboard() {
     setCourseForm((prev) => {
       if (prev.modules.length === 1) return prev;
       return { ...prev, modules: prev.modules.filter((_, idx) => idx !== index) };
+    });
+  }
+
+  function updateLesson(index, field, value) {
+    setGroupForm((prev) => {
+      const nextLessons = [...prev.lessons];
+      nextLessons[index] = { ...nextLessons[index], [field]: value };
+      return { ...prev, lessons: nextLessons };
+    });
+  }
+
+  function addLesson() {
+    setGroupForm((prev) => ({ ...prev, lessons: [...prev.lessons, { ...emptyLesson }] }));
+  }
+
+  function removeLesson(index) {
+    setGroupForm((prev) => {
+      if (prev.lessons.length === 1) return prev;
+      return { ...prev, lessons: prev.lessons.filter((_, idx) => idx !== index) };
     });
   }
 
@@ -108,6 +143,32 @@ export default function MentorDashboard() {
       description: "",
       modules: [{ ...emptyModule }]
     });
+    await loadAll();
+  }
+
+  async function createGroup(e) {
+    e.preventDefault();
+    const lessons = groupForm.lessons
+      .map((lesson) => ({
+        title: lesson.title.trim(),
+        content: lesson.content.trim(),
+        videoUrl: lesson.videoUrl.trim(),
+        documentUrl: lesson.documentUrl.trim()
+      }))
+      .filter((lesson) => lesson.title);
+
+    await apiRequest("/groups", {
+      method: "POST",
+      token,
+      body: {
+        title: groupForm.title,
+        description: groupForm.description,
+        lessons
+      }
+    });
+
+    setMessage("Group created.");
+    setGroupForm({ title: "", description: "", lessons: [{ ...emptyLesson }] });
     await loadAll();
   }
 
@@ -246,6 +307,62 @@ export default function MentorDashboard() {
               <h3>{course.title}</h3>
               <p>{course.description}</p>
               <p>{course.track} | {course.level} | {course.learningPath}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="card span-2">
+        <h2>Mentor groups</h2>
+        <form className="form-stack" onSubmit={createGroup}>
+          <input placeholder="Group title" value={groupForm.title} onChange={(e) => setGroupForm({ ...groupForm, title: e.target.value })} required />
+          <textarea rows="2" placeholder="Group description" value={groupForm.description} onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })} />
+          <h3>Group lessons</h3>
+          {groupForm.lessons.map((lesson, idx) => (
+            <div key={`lesson-${idx}`} className="tile">
+              <p><strong>Lesson {idx + 1}</strong></p>
+              <div className="form-stack">
+                <input
+                  placeholder="Lesson title"
+                  value={lesson.title}
+                  onChange={(e) => updateLesson(idx, "title", e.target.value)}
+                  required={idx === 0}
+                />
+                <textarea
+                  rows="3"
+                  placeholder="Lesson content"
+                  value={lesson.content}
+                  onChange={(e) => updateLesson(idx, "content", e.target.value)}
+                />
+                <input
+                  placeholder="Video URL"
+                  value={lesson.videoUrl}
+                  onChange={(e) => updateLesson(idx, "videoUrl", e.target.value)}
+                />
+                <input
+                  placeholder="Document URL"
+                  value={lesson.documentUrl}
+                  onChange={(e) => updateLesson(idx, "documentUrl", e.target.value)}
+                />
+                <div className="inline">
+                  <button type="button" className="btn" onClick={() => removeLesson(idx)} disabled={groupForm.lessons.length === 1}>Remove lesson</button>
+                </div>
+              </div>
+            </div>
+          ))}
+          <div className="inline">
+            <button type="button" className="btn" onClick={addLesson}>Add lesson</button>
+            <button className="btn primary">Create group</button>
+          </div>
+        </form>
+
+        <div className="grid-2">
+          {groups.map((group) => (
+            <article key={group.id} className="tile">
+              <h3>{group.title}</h3>
+              <p>{group.description}</p>
+              <p><strong>Join code:</strong> {group.code}</p>
+              <p><strong>Lessons:</strong> {(group.lessons || []).length}</p>
             </article>
           ))}
         </div>

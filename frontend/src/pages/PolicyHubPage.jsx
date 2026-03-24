@@ -11,7 +11,7 @@ const POLICY_OPTIONS = [
     image: "/policy/Events.png",
     alt: "Policy Hub events",
     tag: "Peer learning",
-    description: "Follow workshops, exchanges, and policy dialogues connecting actors across the National."
+    description: "Follow workshops, exchanges, and policy dialogues connecting actors across the national."
   },
   {
     title: "News",
@@ -32,7 +32,7 @@ export default function PolicyHubPage() {
               <div className="policy-kicker">The Green Impact</div>
               <h1>POLICY HUB</h1>
               <p>
-                The space for policymakers working for the green and circular economy transition in the National.
+                The space for policymakers working for the green and circular economy transition in the national.
               </p>
               <div className="policy-hero-actions">
                 <a href="#policy-options" className="btn primary">Start here</a>
@@ -41,14 +41,14 @@ export default function PolicyHubPage() {
               <div className="policy-signal-row">
                 <span>Inclusive circular economy</span>
                 <span>Peer learning</span>
-                <span>National cooperation</span>
+                <span>national cooperation</span>
               </div>
             </div>
             <div className="policy-hero-panel">
               <div className="policy-hero-points">
                 <div className="policy-hero-point">
                   <strong>North and South shores</strong>
-                  <span>Regional exchange across the National basin.</span>
+                  <span>Regional exchange across the national basin.</span>
                 </div>
                 <div className="policy-hero-point">
                   <strong>Southern Med focus</strong>
@@ -67,7 +67,7 @@ export default function PolicyHubPage() {
                 <source src="/policy/policyVd.mp4" type="video/mp4" />
               </video>
               <div className="policy-hero-video-copy">
-                <span className="badge">National policy space</span>
+                <span className="badge">national policy space</span>
                 <h2>Policy instruments that enable green and circular businesses</h2>
                 <p>
                   Information exchange and peer learning designed to help countries build better enabling frameworks
@@ -112,22 +112,22 @@ export default function PolicyHubPage() {
             <h2>The Green Impact Policy Hub</h2>
             <p>
               A shared space to strengthen enabling policy environments for green and circular businesses in the
-              National.
+              national.
             </p>
           </div>
           <div className="policy-about-grid">
             <p>
-              The Green Impact Policy Hub aims to support National countries to have in place legal and policy
+              The Green Impact Policy Hub aims to support national countries to have in place legal and policy
               frameworks enabling the switch to an inclusive circular economy.
             </p>
             <p>
               The Policy Hub will contribute to information exchange and peer learning on policy instruments to foster
               the development of green and circular businesses, key drivers for the green and circular economy in the
-              National region.
+              national region.
             </p>
             <p>
               Taking into account the existing needs, the Hub will include countries from both shores of the
-              National Sea, but will focus its support activities on Southern Med countries Tunisia.
+              national Sea, but will focus its support activities on Southern Med countries Tunisia.
             </p>
             <p>
               The Policy Hub is an initiative led by Rawafed, the UNEP/MAP Regional Activity Center for Sustainable
@@ -165,4 +165,5 @@ export default function PolicyHubPage() {
     </main>
   );
 }
+
 

@@ -8,7 +8,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000
 const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
 
 const APPLICATIONS = [
-  { id: "app-1", title: "Mediterranean Green Accelerator", period: "Open until 2026-03-31" },
+  { id: "app-1", title: "National Green Accelerator", period: "Open until 2026-03-31" },
   { id: "app-2", title: "Circular Innovation Grant", period: "Open until 2026-04-15" }
 ];
 
@@ -145,3 +145,4 @@ export default function ProductsPage() {
     </div>
   );
 }
+

@@ -182,35 +182,35 @@ export default function Home() {
               <img src="/images/funds.png" alt="Fund" className="card-icon-image" />
             </div>
             <h3>Fund</h3>
-            <p>Connecting sustainable businesses with financial actors in the Mediterranean</p>
+            <p>Connecting sustainable businesses with financial actors in the National</p>
           </Link>
           <Link to="/hub/community" className="service-card animate-on-scroll hub-link-card">
             <div className="card-icon">
               <img src="/images/community.png" alt="Community" className="card-icon-image" />
             </div>
             <h3>Community</h3>
-            <p>Meet and join the inspiring community of sustainable businesses across the Mediterranean</p>
+            <p>Meet and join the inspiring community of sustainable businesses across the National</p>
           </Link>
           <Link to="/hub/policy" className="service-card animate-on-scroll hub-link-card">
             <div className="card-icon">
               <img src="/images/policy.png" alt="Policy Hub" className="card-icon-image" />
             </div>
             <h3>Policy Hub</h3>
-            <p>Learn more about enabling policies for sustainable busniesses in the Mediterranean</p>
+            <p>Learn more about enabling policies for sustainable busniesses in the National</p>
           </Link>
           <Link to="/hub/ecosystems" className="service-card animate-on-scroll hub-link-card">
             <div className="card-icon">
               <img src="/images/ecosystems.png" alt="Ecosystems" className="card-icon-image" />
             </div>
             <h3>Ecosystems</h3>
-            <p>Advancing sutainable and circular business development ecosystems in the Mediterranean</p>
+            <p>Advancing sutainable and circular business development ecosystems in the National</p>
           </Link>
           <Link to="/hub/open-eco-innovation" className="service-card animate-on-scroll hub-link-card">
             <div className="card-icon">
               <img src="/images/open.png" alt="Open Eco-innovation" className="card-icon-image" />
             </div>
             <h3>Open Eco-innovation</h3>
-            <p>Connecting companies and entrepreneurs in the Mediterranean</p>
+            <p>Connecting companies and entrepreneurs in the National</p>
           </Link>
         </div>
       </section>
@@ -226,7 +226,7 @@ export default function Home() {
               In order to create an enabling ecosystem for sustainable enterprises, through The Green Impact Support Programme we work closely with green and circular entrepreneurs and companies, business support organizations, trainers and mentors, financial institutions, policy-makers and other relevant stakeholders.
             </p>
             <p>
-              In Mediterranean countries, we set up National Partnerships gathered under a common community of practices Business Support Organizations which targets sustainable entrepreneurs and companies.
+              In National countries, we set up National Partnerships gathered under a common community of practices Business Support Organizations which targets sustainable entrepreneurs and companies.
             </p>
             <p>
               Our main targets are the Green Impact community, businesses implementing innovative ecological and social solutions that contribute to a switch to sustainable and fair consumption and production models.
@@ -364,3 +364,4 @@ export default function Home() {
     </div>
   );
 }
+

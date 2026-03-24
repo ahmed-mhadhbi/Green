@@ -11,7 +11,7 @@ export default function OpenEcoInnovationPage() {
               <a href="#open-about" className="btn primary">Start here</a>
             </div>
             <div className="open-hero-panel">
-              <h2>Open innovation for green entrepreneurship in the Mediterranean</h2>
+              <h2>Open innovation for green entrepreneurship in the National</h2>
               <p>
                 Match seekers of green and circular solutions with startups and entrepreneurs able to propose
                 practical, scalable responses.
@@ -40,7 +40,7 @@ export default function OpenEcoInnovationPage() {
             </p>
             <p>
               The participatory process starts with challenges set by drivers or enablers supporting project ideas and
-              sustainable startups from both the public and private sectors in the Mediterranean area.
+              sustainable startups from both the public and private sectors in the National area.
             </p>
             <p>
               All challenges respond to the objective of innovating in the sector of green entrepreneurship and
@@ -78,3 +78,4 @@ export default function OpenEcoInnovationPage() {
     </main>
   );
 }
+

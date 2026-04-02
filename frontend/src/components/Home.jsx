@@ -346,15 +346,13 @@ export default function Home() {
           <div className="footer-lower">
             <div className="footer-lower-left">
               <div className="footer-credits">
-                <div className="footer-credit">
-                  <p>Developed by:</p>
+                <p>Developed by:</p>
+                <div className="footer-credit-images">
                   <img src="/images/x.png" alt="Developed by rawafed" className="footer-credit-image" />
-                </div>
-                <div className="footer-credit">
-                  <p>Funded by</p>
-                  <img src="/images/y.jpg" alt="Funded by Green impact" className="footer-credit-image" />
+                  <img src="/images/y.jpg" alt="Developed by Green impact" className="footer-credit-image" />
                 </div>
               </div>
+              <p>Funded by:</p>
               <div className="footer-partners">
                 <img src="/images/a.png" alt="Partner a" className="footer-partner-image" />
                 <img src="/images/b.png" alt="Partner b" className="footer-partner-image" />

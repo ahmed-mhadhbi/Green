@@ -1734,15 +1734,15 @@ body {
 }
 
 .footer-credits {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem 1.5rem;
-  align-items: flex-start;
+  display: grid;
+  gap: 0.45rem;
 }
 
-.footer-credit {
-  display: grid;
-  gap: 0.35rem;
+.footer-credit-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  align-items: center;
 }
 
 .footer-lower-left p {

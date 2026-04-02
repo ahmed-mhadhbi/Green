@@ -1733,6 +1733,18 @@ body {
   align-items: flex-start;
 }
 
+.footer-credits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  align-items: flex-start;
+}
+
+.footer-credit {
+  display: grid;
+  gap: 0.35rem;
+}
+
 .footer-lower-left p {
   margin: 0;
   color: rgba(255, 255, 255, 0.86);

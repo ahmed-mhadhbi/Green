@@ -345,10 +345,16 @@ export default function Home() {
         <div className="footer-bottom">
           <div className="footer-lower">
             <div className="footer-lower-left">
-              <p>Developed by rawafed:</p>
-              <img src="/images/x.png" alt="Developed by rawafed" className="footer-credit-image" />
-              <p>Funded by Green impact:</p>
-              <img src="/images/y.jpg" alt="Funded by Green impact" className="footer-credit-image" />
+              <div className="footer-credits">
+                <div className="footer-credit">
+                  <p>Developed by:</p>
+                  <img src="/images/x.png" alt="Developed by rawafed" className="footer-credit-image" />
+                </div>
+                <div className="footer-credit">
+                  <p>Funded by</p>
+                  <img src="/images/y.jpg" alt="Funded by Green impact" className="footer-credit-image" />
+                </div>
+              </div>
               <div className="footer-partners">
                 <img src="/images/a.png" alt="Partner a" className="footer-partner-image" />
                 <img src="/images/b.png" alt="Partner b" className="footer-partner-image" />

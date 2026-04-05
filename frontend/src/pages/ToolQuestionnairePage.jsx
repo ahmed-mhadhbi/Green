@@ -539,6 +539,45 @@ export default function ToolQuestionnairePage() {
     return <textarea id={q.id} rows="3" value={answers[q.id] || ""} onChange={(e) => setA(q.id, e.target.value)} />;
   }
 
+  function renderSectionIntro(title, description, helperText) {
+    const details = [description, helperText].filter((text, index, arr) => text && arr.indexOf(text) === index);
+
+    return (
+      <div className="question-card">
+        <div className="hero-kicker">{isGbm ? "Current step" : "Current section"}</div>
+        <h3>{title || currentSection?.title || "Section"}</h3>
+        {details.map((text) => (
+          <p key={text} className="question-description">{text}</p>
+        ))}
+      </div>
+    );
+  }
+
+  function renderGenericSection() {
+    const sectionQuestions = currentSection
+      ? currentSection.questionIds.map((questionId) => questionMap.get(questionId)).filter(Boolean)
+      : tool.questions || [];
+
+    return (
+      <>
+        {renderSectionIntro(
+          currentSection?.title || tool.title,
+          currentSection?.description || tool.description,
+          sectionQuestions.length
+            ? "Answer each question in this section before moving to the next one."
+            : "This section is informational. Use Next when you're ready to continue."
+        )}
+        {sectionQuestions.map((question) => (
+          <div key={question.id} className="question-card">
+            <label htmlFor={question.id}><strong>{question.label}</strong></label>
+            {question.description ? <p className="question-description">{question.description}</p> : null}
+            {renderStandardInput(question)}
+          </div>
+        ))}
+      </>
+    );
+  }
+
   function renderGbmStandardBlocks() {
     return (
       <>

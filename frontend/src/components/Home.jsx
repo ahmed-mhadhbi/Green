@@ -80,6 +80,7 @@ export default function Home() {
     return () => statsObserver.disconnect();
   }, []);
 
+  const dashboardHref = firebaseUser ? "/dashboard" : "/login";
   const toolsHref = firebaseUser ? "/app/tools" : "/join-us";
   const productsHref = firebaseUser ? "/app/products" : "/join-us";
 
@@ -99,6 +100,7 @@ export default function Home() {
               <li><a href="#join-us" className="login-btn">Login</a></li>
             ) : (
               <>
+                <li><Link to={dashboardHref} className="login-btn">Dashboard</Link></li>
                 <li><span className="home-user-pill">{firstName}</span></li>
                 <li><button className="home-signout-btn" onClick={logout}>Sign out</button></li>
               </>
@@ -368,5 +370,8 @@ export default function Home() {
     </div>
   );
 }
+
+
+
 
 

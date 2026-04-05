@@ -3,17 +3,12 @@ import dayjs from "dayjs";
 import { jsPDF } from "jspdf";
 import { Link, useParams } from "react-router-dom";
 import { apiRequest } from "../api/client";
-import EcoDesignToolView from "../components/EcoDesignToolView";
-import GreenBusinessPlanView from "../components/GreenBusinessPlanView";
-import AccessToMarketView from "../components/AccessToMarketView";
 import { useAuth } from "../context/AuthContext";
 import { getToolByKey } from "../data/toolsCatalog";
+import { getToolSections } from "../data/toolSections";
 import { calculateToolProgress, getToolProjectType, resolveAnswersForTool, saveLocalToolAnswers } from "../utils/toolProgress";
 
 const GBM_KEY = "green-business-model";
-const ECO_DESIGN_KEY = "eco-design-tool";
-const GBP_KEY = "green-business-plan";
-const ACCESS_TO_MARKET_KEY = "access-to-market";
 const GBM_PAGES = [
   { n: 1, title: "Step 1: Sketch your business idea", q: [["idea", "What is your initial business idea?"], ["offer", "What will you offer?"], ["customers", "Who are your customers?"], ["partners", "Who are your partners?"]] },
   { n: 2, title: "Step 1: Identify problems and needs", domains: [{ t: "Environmental challenges", q: [["env", "Which environmental challenges are tackled?"]] }, { t: "Social challenges", q: [["social", "Which social challenges are tackled?"]] }, { t: "Market needs", q: [["market", "What are the biggest customer needs?"]] }, { t: "Team motivations", q: [["team", "What motivates the team?"]] }] },
@@ -223,8 +218,14 @@ const ecoCards = [
   ["eco_sales", "Sales & communication"],
   ["eco_infra", "Infrastructure"]
 ];
-const filled = (v) => String(v || "").trim().length > 0;
 const EMPTY_ANSWER = "(not answered yet)";
+
+function hasAnswer(value) {
+  if (value == null) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "number") return Number.isFinite(value);
+  return String(value).trim().length > 0;
+}
 
 function buildQs(page, cards, stages, stakeholderRows, vpRows) {
   if (!page) return [];
@@ -265,9 +266,6 @@ export default function ToolQuestionnairePage() {
   const [stakeholderRows, setStakeholderRows] = useState(1);
   const [vpRows, setVpRows] = useState(1);
   const isGbm = tool?.key === GBM_KEY;
-  const isEcoDesign = tool?.key === ECO_DESIGN_KEY;
-  const isGbp = tool?.key === GBP_KEY;
-  const isAccessToMarket = tool?.key === ACCESS_TO_MARKET_KEY;
 
   useEffect(() => {
     async function load() {
@@ -277,22 +275,27 @@ export default function ToolQuestionnairePage() {
           const res = await apiRequest("/projects/my", { token });
           const list = res.projects || [];
           setProjects(list);
-          const r = resolveAnswersForTool({ uid: firebaseUser?.uid, toolKey, projects: list });
-          setAnswers(r.answers);
-          setSource(r.source);
-          setProjectId(r.project?.id || null);
+          const resolved = resolveAnswersForTool({ uid: firebaseUser?.uid, toolKey, projects: list });
+          setAnswers(resolved.answers);
+          setSource(resolved.source);
+          setProjectId(resolved.project?.id || null);
           return;
         } catch (err) {
           setMessage(err.message);
         }
       }
-      const r = resolveAnswersForTool({ uid: firebaseUser?.uid, toolKey, projects: [] });
-      setAnswers(r.answers);
+      const resolved = resolveAnswersForTool({ uid: firebaseUser?.uid, toolKey, projects: [] });
+      setAnswers(resolved.answers);
       setSource("local");
       setProjectId(null);
     }
     load();
   }, [firebaseUser?.uid, profile?.role, token, tool, toolKey]);
+
+  useEffect(() => {
+    setP(0);
+    setMessage("");
+  }, [toolKey]);
 
   useEffect(() => {
     if (!isGbm) return;
@@ -304,16 +307,63 @@ export default function ToolQuestionnairePage() {
 
   const page = isGbm ? GBM_PAGES[p] : null;
   const pageQs = isGbm ? buildQs(page, cards, stages, stakeholderRows, vpRows) : [];
-  const allGbmQs = useMemo(() => GBM_PAGES.flatMap((x) => buildQs(x, cards, stages, stakeholderRows, vpRows)), [cards, stages, stakeholderRows, vpRows]);
+  const allGbmQs = useMemo(() => GBM_PAGES.flatMap((pageDef) => buildQs(pageDef, cards, stages, stakeholderRows, vpRows)), [cards, stages, stakeholderRows, vpRows]);
+  const questionMap = useMemo(() => new Map((tool?.questions || []).map((question) => [question.id, question])), [tool]);
+  const toolSections = useMemo(() => {
+    if (!tool) return [];
+    if (isGbm) {
+      return GBM_PAGES.map((pageDef) => ({
+        id: `gbm-${pageDef.n}`,
+        title: pageDef.display || pageDef.title,
+        description: (pageDef.copy || [])[0] || "Complete this step before moving to the next one.",
+        questionIds: buildQs(pageDef, cards, stages, stakeholderRows, vpRows).map((question) => question.id)
+      }));
+    }
+    return getToolSections(tool);
+  }, [tool, isGbm, cards, stages, stakeholderRows, vpRows]);
+
+  useEffect(() => {
+    if (p <= toolSections.length - 1) return;
+    setP(Math.max(0, toolSections.length - 1));
+  }, [p, toolSections.length]);
+
   const progress = useMemo(() => {
-    if (!tool) return { answeredCount: 0, totalCount: 0, percent: 0 };
+    if (!tool) return { answeredCount: 0, totalCount: 0, percent: 0, status: "Not started" };
     if (!isGbm) return calculateToolProgress(tool, answers);
     const totalCount = allGbmQs.length;
-    const answeredCount = allGbmQs.reduce((n, q) => n + (filled(answers[q.id]) ? 1 : 0), 0);
-    return { totalCount, answeredCount, percent: totalCount ? Math.round((answeredCount / totalCount) * 100) : 0 };
-  }, [allGbmQs, answers, isGbm, tool]);
-  const canNext = !isGbm || pageQs.every((q) => filled(answers[q.id]));
+    const answeredCount = allGbmQs.reduce((count, question) => count + (hasAnswer(answers[question.id]) ? 1 : 0), 0);
 
+    let status = "Not started";
+    if (answeredCount > 0 && answeredCount < totalCount) status = "In progress";
+    if (totalCount > 0 && answeredCount === totalCount) status = "Completed";
+
+    return {
+      totalCount,
+      answeredCount,
+      percent: totalCount ? Math.round((answeredCount / totalCount) * 100) : 0,
+      status
+    };
+  }, [allGbmQs, answers, isGbm, tool]);
+
+  const sectionSummaries = useMemo(() => {
+    return toolSections.map((section, index) => {
+      const questionIds = isGbm ? section.questionIds : section.questionIds.filter((questionId) => questionMap.has(questionId));
+      const totalCount = questionIds.length;
+      const answeredCount = questionIds.reduce((count, questionId) => count + (hasAnswer(answers[questionId]) ? 1 : 0), 0);
+
+      return {
+        ...section,
+        index,
+        questionIds,
+        totalCount,
+        answeredCount,
+        isComplete: totalCount === 0 || answeredCount === totalCount
+      };
+    });
+  }, [answers, isGbm, questionMap, toolSections]);
+
+  const currentSection = sectionSummaries[p] || null;
+  const canNext = currentSection ? currentSection.isComplete : false;
   if (!tool) {
     return (
       <section className="card">
@@ -428,31 +478,33 @@ export default function ToolQuestionnairePage() {
       addParagraph(tool.description, { size: 10, color: [71, 85, 105] });
     }
 
-    const sections = (() => {
-      if (isGbm) {
-        const pdfCards = Math.max(1, Number(answers.__cards || cards || 1));
-        const pdfStages = Math.max(1, Number(answers.__stages || stages || 1));
-        const pdfStakeholderRows = Math.max(1, Number(answers.__stakeholderRows || stakeholderRows || 1));
-        const pdfVpRows = Math.max(1, Number(answers.__vpRows || vpRows || 1));
-        return GBM_PAGES.map((pageDef) => ({
+    const sections = isGbm
+      ? GBM_PAGES.map((pageDef) => ({
           title: pageDef.display || `${pageDef.n}. ${pageDef.title}`,
-          items: buildQs(pageDef, pdfCards, pdfStages, pdfStakeholderRows, pdfVpRows).map((q) => ({
-            label: q.label,
-            value: persisted[q.id]
+          items: buildQs(
+            pageDef,
+            Math.max(1, Number(answers.__cards || cards || 1)),
+            Math.max(1, Number(answers.__stages || stages || 1)),
+            Math.max(1, Number(answers.__stakeholderRows || stakeholderRows || 1)),
+            Math.max(1, Number(answers.__vpRows || vpRows || 1))
+          ).map((question) => ({
+            label: question.label,
+            value: persisted[question.id]
           }))
-        }));
-      }
-      return [
-        {
-          title: "Answers",
-          items: (tool.questions || []).map((q) => ({
-            label: q.label,
-            description: q.description,
-            value: persisted[q.id]
-          }))
-        }
-      ];
-    })();
+        }))
+      : sectionSummaries
+          .filter((section) => section.questionIds.length > 0)
+          .map((section) => ({
+            title: section.title,
+            items: section.questionIds.map((questionId) => {
+              const question = questionMap.get(questionId);
+              return {
+                label: question?.label || questionId,
+                description: question?.description,
+                value: persisted[questionId]
+              };
+            })
+          }));
 
     sections.forEach((section) => {
       ensureSpace(32);
@@ -493,13 +545,13 @@ export default function ToolQuestionnairePage() {
         {(page.plus || []).length ? (
           <div className="question-card">
             <label><strong>Previous answers</strong></label>
-            {page.plus.map((k) => <p key={k} className="question-description">{answers[k] || "(not answered yet)"}</p>)}
+            {page.plus.map((k) => <p key={k} className="question-description">{answers[k] || EMPTY_ANSWER}</p>)}
           </div>
         ) : null}
         {(page.star || []).map(([label, key]) => (
           <div key={key} className="question-card">
             <label><strong>{label}</strong></label>
-            <p className="question-description">{answers[key] || "(not answered yet)"}</p>
+            <p className="question-description">{answers[key] || EMPTY_ANSWER}</p>
           </div>
         ))}
         {(page.domains || []).map((d) => (
@@ -775,7 +827,7 @@ export default function ToolQuestionnairePage() {
         </div>
         <div className="gbc-eco-grid">
           {ecoCards.map(([id, label]) => (
-            <div key={id} className={`gbc-eco-item ${filled(answers[id]) ? "active" : ""}`}>
+            <div key={id} className={`gbc-eco-item ${hasAnswer(answers[id]) ? "active" : ""}`}>
               <strong>{label}</strong>
               <textarea rows="2" value={answers[id] || ""} onChange={(e) => setA(id, e.target.value)} />
             </div>
@@ -793,9 +845,7 @@ export default function ToolQuestionnairePage() {
     const pageLabel = page.display || `${page.n}. ${page.title}`;
     return (
       <>
-        <div className="question-card">
-          <label><strong>{pageLabel}</strong></label>
-        </div>
+        {renderSectionIntro(pageLabel, currentSection?.description, "Complete this step before moving to the next one.")}
         {(page.copy || []).length ? (
           <div className="question-card">
             {page.copy.map((text, idx) => (
@@ -810,47 +860,74 @@ export default function ToolQuestionnairePage() {
         {page.n === 15 ? renderPage15ActivitiesResources() : null}
         {page.n === 16 ? renderPage16Eco() : null}
         {[8, 9, 10, 14, 15, 16].includes(page.n) ? null : renderGbmStandardBlocks()}
-        <div className="inline">
-          {p > 0 ? <button type="button" className="btn" onClick={() => setP((x) => x - 1)}>Previous</button> : null}
-          {canNext && p < GBM_PAGES.length - 1 ? <button type="button" className="btn primary" onClick={() => setP((x) => x + 1)}>Next</button> : null}
-        </div>
       </>
     );
   }
 
   return (
-    <div className="content-stack">
-      <section className="card">
-        <h2>{tool.title}</h2>
-        <p>{tool.description}</p>
-        <p className="tool-progress">Progress: <strong>{progress.percent}%</strong> ({progress.answeredCount}/{progress.totalCount})</p>
-        {isGbm ? <p className="subtitle">Page {p + 1}/{GBM_PAGES.length}</p> : null}
-        <p className="subtitle">Data source: {source === "project" ? "Project workspace" : "Local draft"}</p>
-        {message ? <p className="info">{message}</p> : null}
-      </section>
-
-      <section className="card form-stack">
-        {isEcoDesign ? (
-          <EcoDesignToolView answers={answers} setA={setA} />
-        ) : isGbp ? (
-          <GreenBusinessPlanView answers={answers} setA={setA} />
-        ) : isAccessToMarket ? (
-          <AccessToMarketView answers={answers} setA={setA} />
-        ) : !isGbm ? tool.questions.map((q) => (
-          <div key={q.id} className="question-card">
-            <label htmlFor={q.id}><strong>{q.label}</strong></label>
-            <p className="question-description">Why this is asked: {q.description}</p>
-            {renderStandardInput(q)}
-          </div>
-        )) : renderGbmPage()}
-
-        <div className="inline">
-          <button className="btn primary" onClick={saveAnswers}>Save answers</button>
-          <button className="btn" onClick={downloadAnswersPdf}>Download PDF</button>
-          {tool.key === GBM_KEY ? <button className="btn" onClick={downloadGbmJson}>Download GBM JSON</button> : null}
-          <Link to="/app/tools" className="btn">Back to tools</Link>
+    <div className="tool-layout">
+      <aside className="card tool-sidebar">
+        <div className="tool-sidebar-head">
+          <div className="hero-kicker">Tool navigation</div>
+          <h3>{tool.title}</h3>
+          <p className="subtitle">{progress.percent}% filled overall</p>
         </div>
-      </section>
+
+        <div className="tool-sidebar-list">
+          {sectionSummaries.map((section) => (
+            <button
+              key={section.id}
+              type="button"
+              className={`tool-step-btn ${section.index === p ? "active" : ""} ${section.isComplete ? "complete" : ""}`}
+              onClick={() => setP(section.index)}
+            >
+              <div className="tool-step-top">
+                <span className="tool-step-index">{String(section.index + 1).padStart(2, "0")}</span>
+                <span className={`tool-step-status ${section.isComplete ? "complete" : "pending"}`}>
+                  {section.isComplete ? "Done" : `${section.answeredCount}/${section.totalCount}`}
+                </span>
+              </div>
+              <strong>{section.title}</strong>
+              <span className="tool-step-meta">
+                {section.totalCount === 0 ? "Overview" : `${section.answeredCount}/${section.totalCount} answered`}
+              </span>
+            </button>
+          ))}
+        </div>
+      </aside>
+
+      <div className="tool-body">
+        <section className="card">
+          <h2>{tool.title}</h2>
+          <p>{tool.description}</p>
+          <p className="tool-progress">Progress: <strong>{progress.percent}%</strong> ({progress.answeredCount}/{progress.totalCount})</p>
+          {currentSection ? <p className="subtitle">Step {p + 1}/{sectionSummaries.length}: {currentSection.title}</p> : null}
+          <p className="subtitle">Status: {progress.status}</p>
+          <p className="subtitle">Data source: {source === "project" ? "Project workspace" : "Local draft"}</p>
+          {message ? <p className="info tool-info">{message}</p> : null}
+        </section>
+
+        <section className="card form-stack">
+          {isGbm ? renderGbmPage() : renderGenericSection()}
+
+          <div className="tool-footer">
+            <div className="inline">
+              {p > 0 ? <button type="button" className="btn" onClick={() => setP((x) => x - 1)}>Previous</button> : null}
+              {p < sectionSummaries.length - 1 ? <button type="button" className="btn primary" onClick={() => setP((x) => x + 1)} disabled={!canNext}>Next</button> : null}
+            </div>
+            {!canNext && currentSection && currentSection.totalCount > 0 ? (
+              <p className="question-description">Fill all questions in this section to unlock the next step.</p>
+            ) : null}
+            <div className="inline">
+              <button className="btn primary" onClick={saveAnswers}>Save answers</button>
+              <button className="btn" onClick={downloadAnswersPdf}>Download PDF</button>
+              {tool.key === GBM_KEY ? <button className="btn" onClick={downloadGbmJson}>Download GBM JSON</button> : null}
+              <Link to="/app/tools" className="btn">Back to tools</Link>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
+

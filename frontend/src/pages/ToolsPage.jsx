@@ -26,11 +26,9 @@ export default function ToolsPage() {
   }, [token, profile?.role]);
 
   const progressMap = useMemo(() => {
-    if (profile?.role !== "entrepreneur") return {};
-
     return buildToolProgressList({
       uid: firebaseUser?.uid,
-      projects
+      projects: profile?.role === "entrepreneur" ? projects : []
     }).reduce((acc, item) => {
       acc[item.toolKey] = item;
       return acc;
@@ -48,7 +46,12 @@ export default function ToolsPage() {
 
       <section className="tools-grid">
         {TOOLS_CATALOG.map((tool) => {
-          const progress = progressMap[tool.key];
+          const progress = progressMap[tool.key] || {
+            percent: 0,
+            answeredCount: 0,
+            totalCount: tool.questions.length,
+            status: "Not started"
+          };
 
           return (
             <article key={tool.key} className="card tool-card">
@@ -56,19 +59,19 @@ export default function ToolsPage() {
                 <div className="tool-icon" aria-hidden="true">
                   {tool.title.split(" ").map((chunk) => chunk[0]).join("").slice(0, 2)}
                 </div>
-                <h3>{tool.title}</h3>
+                <div className="tool-card-title-wrap">
+                  <h3>{tool.title}</h3>
+                  <span className="tool-percent-chip">{progress.percent}% filled</span>
+                </div>
               </div>
               <p>{tool.description}</p>
-              {progress ? (
-                <>
-                  <p className="tool-progress">
-                    Progress: <strong>{progress.percent}%</strong> ({progress.status})
-                  </p>
-                  <div className="progress-track" aria-hidden="true">
-                    <div className="progress-fill" style={{ width: `${progress.percent}%` }}></div>
-                  </div>
-                </>
-              ) : null}
+              <p className="tool-progress">
+                Progress: <strong>{progress.percent}%</strong> ({progress.answeredCount}/{progress.totalCount})
+              </p>
+              <div className="progress-track" aria-hidden="true">
+                <div className="progress-fill" style={{ width: `${progress.percent}%` }}></div>
+              </div>
+              <p className="subtitle">Status: {progress.status}</p>
               <Link className="btn" to={`/app/tools/${tool.key}`}>Open tool</Link>
             </article>
           );

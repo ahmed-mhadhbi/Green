@@ -156,8 +156,19 @@ h3 {
 }
 
 .app-side-nav-note {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-4px);
   font-size: 0.84rem;
   color: var(--muted);
+  transition: max-height 180ms ease, opacity 180ms ease, transform 180ms ease;
+}
+
+.app-side-nav a.active .app-side-nav-note {
+  max-height: 48px;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .content {
@@ -470,6 +481,114 @@ th {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1rem;
+}
+
+.tools-browser {
+  display: grid;
+  gap: 1rem;
+}
+
+.tool-browser-card {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.tool-browser-summary {
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tool-browser-summary-copy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.tool-browser-summary-copy h3,
+.tool-browser-summary-copy p {
+  margin: 0;
+}
+
+.tool-browser-toggle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #eefaf3;
+  color: #155c3f;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.tool-browser-details {
+  display: grid;
+  gap: 0.8rem;
+  padding-top: 0.2rem;
+  border-top: 1px solid #dbe9e2;
+}
+
+.tool-browser-step-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.tool-browser-step-card {
+  display: grid;
+  gap: 0.65rem;
+  border: 1px solid #d4e5db;
+  border-radius: 16px;
+  padding: 0.75rem;
+  background: linear-gradient(140deg, #ffffff 0%, #f8fdf9 100%);
+}
+
+.tool-browser-step-trigger {
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tool-browser-step-meta {
+  color: #4b665c;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.tool-browser-page-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.tool-browser-page-link {
+  display: block;
+  border: 1px solid #d3e4db;
+  border-radius: 12px;
+  padding: 0.7rem 0.8rem;
+  background: #ffffff;
+  color: var(--text);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.tool-browser-page-link:hover {
+  transform: translateY(-1px);
+  border-color: #98c3ad;
+  box-shadow: 0 12px 24px #1f4c3912;
 }
 
 .tool-card {

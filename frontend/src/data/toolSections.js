@@ -4,18 +4,21 @@ export const TOOL_SECTIONS = {
       id: "gbp-intro",
       title: "0 - Intro",
       description: "Review how the Green Business Plan works before you start writing your answers.",
+      stepGroup: 1,
       questionIds: []
     },
     {
       id: "gbp-launching",
       title: "1 - Launching your business",
       description: "Use this step to understand the purpose of the business-planning phase and how it guides execution.",
+      stepGroup: 1,
       questionIds: []
     },
     {
       id: "gbp-operations",
       title: "1.1 - Operation and management plan",
       description: "Define how the business will operate day to day, who will run it, and what resources are required.",
+      stepGroup: 1,
       questionIds: [
         "operationsPlan",
         "gbp_management_problem_solving",
@@ -29,6 +32,7 @@ export const TOOL_SECTIONS = {
       id: "gbp-marketing",
       title: "1.2 - Marketing plan",
       description: "Clarify your customers, positioning, channels, and the way your sustainable offer reaches the market.",
+      stepGroup: 1,
       questionIds: [
         "marketingStrategy",
         "gbp_customers_value_proposition",
@@ -43,6 +47,7 @@ export const TOOL_SECTIONS = {
       id: "gbp-financial",
       title: "1.3 - Financial plan",
       description: "Document setup costs, forecasts, and the core numbers that prove the plan is viable.",
+      stepGroup: 1,
       questionIds: [
         "gbp_setup_costs_capital",
         "gbp_income_statement_y0",
@@ -58,6 +63,7 @@ export const TOOL_SECTIONS = {
       id: "gbp-legal",
       title: "1.4 - Legal management plan",
       description: "Capture the legal structure, market protections, and regulatory context for the business.",
+      stepGroup: 1,
       questionIds: [
         "gbp_legal_organizational",
         "gbp_legal_market",
@@ -68,6 +74,7 @@ export const TOOL_SECTIONS = {
       id: "gbp-measuring",
       title: "1.5 - Measuring and looking forward",
       description: "Explain how you will forecast the future and measure impact so the business can improve continuously.",
+      stepGroup: 1,
       questionIds: [
         "gbp_forecasting_future",
         "impactGoals"
@@ -77,6 +84,7 @@ export const TOOL_SECTIONS = {
       id: "gbp-summary",
       title: "1.6 - Executive summary",
       description: "Assemble the core summary, organization profile, business overview, and investor-facing details.",
+      stepGroup: 1,
       questionIds: [
         "executiveSummary",
         "gbp_vision",
@@ -120,12 +128,14 @@ export const TOOL_SECTIONS = {
       id: "gbp-take-off",
       title: "2 - The business take off",
       description: "List the next execution steps that move the plan into action.",
+      stepGroup: 2,
       questionIds: ["gbp_execution_next_steps"]
     },
     {
       id: "gbp-funding",
       title: "3 - Get funded",
       description: "Summarize your funding strategy, target sources, and outreach plan.",
+      stepGroup: 3,
       questionIds: ["gbp_funding_strategy"]
     }
   ],
@@ -134,24 +144,28 @@ export const TOOL_SECTIONS = {
       id: "eco-intro",
       title: "Intro",
       description: "Start with the eco-design overview so the team understands the purpose of the tool.",
+      stepGroup: 1,
       questionIds: []
     },
     {
       id: "eco-journey",
       title: "Journey map",
       description: "Review the eco-design journey and the logic of the steps before answering.",
+      stepGroup: 1,
       questionIds: []
     },
     {
       id: "eco-scope",
       title: "Scope",
       description: "Choose whether you are eco-designing a product or a service.",
+      stepGroup: 1,
       questionIds: ["eco_scope"]
     },
     {
       id: "eco-pack-bag",
       title: "Pack the bag",
       description: "Capture the project name, team, context, and sustainable vision for the redesign journey.",
+      stepGroup: 1,
       questionIds: [
         "eco_project_name",
         "eco_team_setup",
@@ -164,6 +178,7 @@ export const TOOL_SECTIONS = {
       id: "eco-life-cycle",
       title: "Life cycle mapping",
       description: "Describe the current life cycle of the offer across all major stages.",
+      stepGroup: 2,
       questionIds: [
         "eco_lifecycle_raw_materials",
         "eco_lifecycle_production",
@@ -177,6 +192,7 @@ export const TOOL_SECTIONS = {
       id: "eco-assessment",
       title: "Assessment and priorities",
       description: "Score the room for improvement and turn the hotspots into a practical action priority list.",
+      stepGroup: 3,
       questionIds: [
         "eco_assessment_raw_materials",
         "eco_assessment_production",
@@ -193,18 +209,21 @@ export const TOOL_SECTIONS = {
       id: "atm-intro",
       title: "Intro",
       description: "Review the purpose of the Access to Market tool and how it strengthens a sustainable brand.",
+      stepGroup: 1,
       questionIds: []
     },
     {
       id: "atm-start",
       title: "How to get started",
       description: "Use this overview step to understand the modules before filling in the tool.",
+      stepGroup: 1,
       questionIds: []
     },
     {
       id: "atm-brand-goals",
       title: "Brand essence",
       description: "Align the brand with the business mission and summarize the origin story of the venture.",
+      stepGroup: 1,
       questionIds: [
         "atm_challenge_summary",
         "atm_founder_story",
@@ -220,6 +239,7 @@ export const TOOL_SECTIONS = {
       id: "atm-positioning",
       title: "Positioning",
       description: "Define the strengths, positioning space, and manifesto that make the brand stand out.",
+      stepGroup: 2,
       questionIds: [
         "atm_swot_strengths",
         "atm_swot_weaknesses",
@@ -235,6 +255,7 @@ export const TOOL_SECTIONS = {
       id: "atm-visual",
       title: "Visual identity",
       description: "Build the visual side of the brand and document the foundations of the style guide.",
+      stepGroup: 2,
       questionIds: [
         "atm_brand_name_notes",
         "atm_logo_benchmarking",
@@ -250,6 +271,7 @@ export const TOOL_SECTIONS = {
       id: "atm-narrative",
       title: "Narrative and key messages",
       description: "Clarify the audiences, core messages, and storytelling structure for the brand.",
+      stepGroup: 3,
       questionIds: [
         "atm_audience_core",
         "atm_audience_ambassadors",
@@ -272,6 +294,7 @@ export const TOOL_SECTIONS = {
       id: "atm-offline",
       title: "Offline communications",
       description: "Plan market entry, sales channels, offline campaigns, and sustainable promotional materials.",
+      stepGroup: 4,
       questionIds: [
         "entryStrategy",
         "salesChannels",
@@ -285,6 +308,7 @@ export const TOOL_SECTIONS = {
       id: "atm-digital",
       title: "Digital communications",
       description: "Define the website structure and the digital channels, cadence, and metrics that support growth.",
+      stepGroup: 4,
       questionIds: [
         "atm_website_plan",
         "atm_social_goals",
@@ -297,6 +321,7 @@ export const TOOL_SECTIONS = {
       id: "atm-stakeholders",
       title: "Stakeholder mapping",
       description: "Identify, map, and prioritize the external stakeholders who matter most.",
+      stepGroup: 5,
       questionIds: [
         "atm_stakeholder_list",
         "atm_stakeholder_map",
@@ -307,6 +332,7 @@ export const TOOL_SECTIONS = {
       id: "atm-partnerships",
       title: "Partnership activation",
       description: "Select partnership opportunities and define how you will activate and evaluate them.",
+      stepGroup: 5,
       questionIds: [
         "partnerships",
         "atm_partnership_benefits_risks",
@@ -317,6 +343,7 @@ export const TOOL_SECTIONS = {
       id: "atm-glossary",
       title: "Glossary",
       description: "Use the glossary as a reference while you complete the tool.",
+      stepGroup: 6,
       questionIds: []
     }
   ]

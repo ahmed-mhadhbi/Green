@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { jsPDF } from "jspdf";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { getToolByKey } from "../data/toolsCatalog";
@@ -253,6 +253,7 @@ function buildQs(page, cards, stages, stakeholderRows, vpRows) {
 
 export default function ToolQuestionnairePage() {
   const { toolKey } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { token, profile, firebaseUser } = useAuth();
   const tool = getToolByKey(toolKey);
   const [projects, setProjects] = useState([]);
@@ -260,7 +261,6 @@ export default function ToolQuestionnairePage() {
   const [source, setSource] = useState("local");
   const [projectId, setProjectId] = useState(null);
   const [message, setMessage] = useState("");
-  const [p, setP] = useState(0);
   const [cards, setCards] = useState(1);
   const [stages, setStages] = useState(1);
   const [stakeholderRows, setStakeholderRows] = useState(1);
@@ -293,7 +293,6 @@ export default function ToolQuestionnairePage() {
   }, [firebaseUser?.uid, profile?.role, token, tool, toolKey]);
 
   useEffect(() => {
-    setP(0);
     setMessage("");
   }, [toolKey]);
 
@@ -305,9 +304,6 @@ export default function ToolQuestionnairePage() {
     setVpRows(Math.max(1, Number(answers.__vpRows || 1)));
   }, [answers, isGbm]);
 
-  const page = isGbm ? GBM_PAGES[p] : null;
-  const pageQs = isGbm ? buildQs(page, cards, stages, stakeholderRows, vpRows) : [];
-  const allGbmQs = useMemo(() => GBM_PAGES.flatMap((pageDef) => buildQs(pageDef, cards, stages, stakeholderRows, vpRows)), [cards, stages, stakeholderRows, vpRows]);
   const questionMap = useMemo(() => new Map((tool?.questions || []).map((question) => [question.id, question])), [tool]);
   const toolSections = useMemo(() => {
     if (!tool) return [];
@@ -321,11 +317,15 @@ export default function ToolQuestionnairePage() {
     }
     return getToolSections(tool);
   }, [tool, isGbm, cards, stages, stakeholderRows, vpRows]);
-
-  useEffect(() => {
-    if (p <= toolSections.length - 1) return;
-    setP(Math.max(0, toolSections.length - 1));
-  }, [p, toolSections.length]);
+  const requestedSectionIndex = Number.parseInt(searchParams.get("section") || "0", 10);
+  const p = Number.isInteger(requestedSectionIndex)
+    && requestedSectionIndex >= 0
+    && requestedSectionIndex < toolSections.length
+    ? requestedSectionIndex
+    : 0;
+  const page = isGbm ? GBM_PAGES[p] : null;
+  const pageQs = isGbm ? buildQs(page, cards, stages, stakeholderRows, vpRows) : [];
+  const allGbmQs = useMemo(() => GBM_PAGES.flatMap((pageDef) => buildQs(pageDef, cards, stages, stakeholderRows, vpRows)), [cards, stages, stakeholderRows, vpRows]);
 
   const progress = useMemo(() => {
     if (!tool) return { answeredCount: 0, totalCount: 0, percent: 0, status: "Not started" };
@@ -374,6 +374,14 @@ export default function ToolQuestionnairePage() {
   }
 
   const setA = (id, v) => setAnswers((x) => ({ ...x, [id]: v }));
+  const goToSection = (nextIndex) => {
+    if (toolSections.length === 0) return;
+
+    const safeIndex = Math.max(0, Math.min(nextIndex, toolSections.length - 1));
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("section", String(safeIndex));
+    setSearchParams(nextParams, { replace: true });
+  };
   const persisted = isGbm
     ? { ...answers, __cards: cards, __stages: stages, __stakeholderRows: stakeholderRows, __vpRows: vpRows }
     : answers;
@@ -918,7 +926,7 @@ export default function ToolQuestionnairePage() {
               key={section.id}
               type="button"
               className={`tool-step-btn ${section.index === p ? "active" : ""} ${section.isComplete ? "complete" : ""}`}
-              onClick={() => setP(section.index)}
+              onClick={() => goToSection(section.index)}
             >
               <div className="tool-step-top">
                 <span className="tool-step-index">{String(section.index + 1).padStart(2, "0")}</span>
@@ -951,8 +959,8 @@ export default function ToolQuestionnairePage() {
 
           <div className="tool-footer">
             <div className="inline">
-              {p > 0 ? <button type="button" className="btn" onClick={() => setP((x) => x - 1)}>Previous</button> : null}
-              {p < sectionSummaries.length - 1 ? <button type="button" className="btn primary" onClick={() => setP((x) => x + 1)} disabled={!canNext}>Next</button> : null}
+              {p > 0 ? <button type="button" className="btn" onClick={() => goToSection(p - 1)}>Previous</button> : null}
+              {p < sectionSummaries.length - 1 ? <button type="button" className="btn primary" onClick={() => goToSection(p + 1)} disabled={!canNext}>Next</button> : null}
             </div>
             {!canNext && currentSection && currentSection.totalCount > 0 ? (
               <p className="question-description">Fill all questions in this section to unlock the next step.</p>

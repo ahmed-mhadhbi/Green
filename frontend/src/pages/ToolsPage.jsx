@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { TOOLS_CATALOG } from "../data/toolsCatalog";
+import { getToolStepGroups } from "../data/toolNavigation";
 import { apiRequest } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { buildToolProgressList } from "../utils/toolProgress";
@@ -9,6 +10,8 @@ export default function ToolsPage() {
   const { token, profile, firebaseUser } = useAuth();
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState("");
+  const [openToolKey, setOpenToolKey] = useState(null);
+  const [openStepKey, setOpenStepKey] = useState(null);
 
   useEffect(() => {
     async function loadProjects() {
@@ -35,6 +38,29 @@ export default function ToolsPage() {
     }, {});
   }, [firebaseUser?.uid, profile?.role, projects]);
 
+  const toolBrowser = useMemo(() => {
+    return TOOLS_CATALOG.map((tool) => ({
+      tool,
+      steps: getToolStepGroups(tool),
+      progress: progressMap[tool.key] || {
+        percent: 0,
+        answeredCount: 0,
+        totalCount: tool.questions.length,
+        status: "Not started"
+      }
+    }));
+  }, [progressMap]);
+
+  const handleToolToggle = (toolKey) => {
+    setOpenToolKey((current) => (current === toolKey ? null : toolKey));
+    setOpenStepKey(null);
+  };
+
+  const handleStepToggle = (toolKey, stepNumber) => {
+    const nextKey = `${toolKey}:${stepNumber}`;
+    setOpenStepKey((current) => (current === nextKey ? null : nextKey));
+  };
+
   return (
     <div className="content-stack">
       <section className="card page-hero">
@@ -44,35 +70,68 @@ export default function ToolsPage() {
         {error ? <p className="error">{error}</p> : null}
       </section>
 
-      <section className="tools-grid">
-        {TOOLS_CATALOG.map((tool) => {
-          const progress = progressMap[tool.key] || {
-            percent: 0,
-            answeredCount: 0,
-            totalCount: tool.questions.length,
-            status: "Not started"
-          };
+      <section className="tools-browser">
+        {toolBrowser.map(({ tool, progress, steps }) => {
+          const isToolOpen = openToolKey === tool.key;
 
           return (
-            <article key={tool.key} className="card tool-card">
-              <div className="tool-head">
-                <div className="tool-icon" aria-hidden="true">
-                  {tool.title.split(" ").map((chunk) => chunk[0]).join("").slice(0, 2)}
-                </div>
-                <div className="tool-card-title-wrap">
+            <article key={tool.key} className={`card tool-browser-card ${isToolOpen ? "open" : ""}`}>
+              <button
+                type="button"
+                className="tool-browser-summary"
+                onClick={() => handleToolToggle(tool.key)}
+                aria-expanded={isToolOpen}
+              >
+                <div className="tool-browser-summary-copy">
                   <h3>{tool.title}</h3>
-                  <span className="tool-percent-chip">{progress.percent}% filled</span>
+                  <p className="tool-progress">
+                    Progress: <strong>{progress.percent}%</strong> ({progress.answeredCount}/{progress.totalCount})
+                  </p>
                 </div>
-              </div>
-              <p>{tool.description}</p>
-              <p className="tool-progress">
-                Progress: <strong>{progress.percent}%</strong> ({progress.answeredCount}/{progress.totalCount})
-              </p>
+                <span className="tool-browser-toggle" aria-hidden="true">{isToolOpen ? "-" : "+"}</span>
+              </button>
               <div className="progress-track" aria-hidden="true">
                 <div className="progress-fill" style={{ width: `${progress.percent}%` }}></div>
               </div>
-              <p className="subtitle">Status: {progress.status}</p>
-              <Link className="btn" to={`/app/tools/${tool.key}`}>Open tool</Link>
+              {isToolOpen ? (
+                <div className="tool-browser-details">
+                  <p className="subtitle">Status: {progress.status}</p>
+                  <div className="tool-browser-step-list">
+                    {steps.map((step) => {
+                      const stepKey = `${tool.key}:${step.stepNumber}`;
+                      const isStepOpen = openStepKey === stepKey;
+
+                      return (
+                        <div key={step.id} className="tool-browser-step-card">
+                          <button
+                            type="button"
+                            className="tool-browser-step-trigger"
+                            onClick={() => handleStepToggle(tool.key, step.stepNumber)}
+                            aria-expanded={isStepOpen}
+                          >
+                            <strong>{step.title}</strong>
+                            <span className="tool-browser-step-meta">{step.items.length} pages</span>
+                          </button>
+
+                          {isStepOpen ? (
+                            <div className="tool-browser-page-list">
+                              {step.items.map((item) => (
+                                <Link
+                                  key={item.id}
+                                  className="tool-browser-page-link"
+                                  to={`/app/tools/${tool.key}?section=${item.sectionIndex}`}
+                                >
+                                  {item.title}
+                                </Link>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
             </article>
           );
         })}

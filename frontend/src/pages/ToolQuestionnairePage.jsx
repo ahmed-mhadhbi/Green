@@ -4,6 +4,7 @@ import { jsPDF } from "jspdf";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { getToolStepGroups } from "../data/toolNavigation";
 import { getToolByKey } from "../data/toolsCatalog";
 import { getToolSections } from "../data/toolSections";
 import { calculateToolProgress, getToolProjectType, resolveAnswersForTool, saveLocalToolAnswers } from "../utils/toolProgress";
@@ -265,6 +266,7 @@ export default function ToolQuestionnairePage() {
   const [stages, setStages] = useState(1);
   const [stakeholderRows, setStakeholderRows] = useState(1);
   const [vpRows, setVpRows] = useState(1);
+  const [openSidebarStepId, setOpenSidebarStepId] = useState(null);
   const isGbm = tool?.key === GBM_KEY;
 
   useEffect(() => {
@@ -362,8 +364,42 @@ export default function ToolQuestionnairePage() {
     });
   }, [answers, isGbm, questionMap, toolSections]);
 
+  const stepGroups = useMemo(() => {
+    if (!tool) return [];
+
+    const sectionMap = new Map(sectionSummaries.map((section) => [section.id, section]));
+
+    return getToolStepGroups(tool)
+      .map((group) => {
+        const items = group.items
+          .map((item) => sectionMap.get(item.id) || sectionSummaries[item.sectionIndex] || null)
+          .filter(Boolean)
+          .sort((left, right) => left.index - right.index);
+
+        const totalCount = items.reduce((count, item) => count + item.totalCount, 0);
+        const answeredCount = items.reduce((count, item) => count + item.answeredCount, 0);
+
+        return {
+          ...group,
+          items,
+          totalCount,
+          answeredCount,
+          isComplete: items.length > 0 && items.every((item) => item.isComplete),
+          hasCurrent: items.some((item) => item.index === p)
+        };
+      })
+      .filter((group) => group.items.length > 0);
+  }, [p, sectionSummaries, tool]);
+
   const currentSection = sectionSummaries[p] || null;
+  const currentStepGroup = stepGroups.find((group) => group.hasCurrent) || stepGroups[0] || null;
   const canNext = currentSection ? currentSection.isComplete : false;
+
+  useEffect(() => {
+    if (!currentStepGroup?.id) return;
+    setOpenSidebarStepId(currentStepGroup.id);
+  }, [currentStepGroup?.id]);
+
   if (!tool) {
     return (
       <section className="card">
@@ -381,6 +417,9 @@ export default function ToolQuestionnairePage() {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("section", String(safeIndex));
     setSearchParams(nextParams, { replace: true });
+  };
+  const toggleSidebarStep = (stepId) => {
+    setOpenSidebarStepId((current) => (current === stepId ? null : stepId));
   };
   const persisted = isGbm
     ? { ...answers, __cards: cards, __stages: stages, __stakeholderRows: stakeholderRows, __vpRows: vpRows }
@@ -921,25 +960,48 @@ export default function ToolQuestionnairePage() {
         </div>
 
         <div className="tool-sidebar-list">
-          {sectionSummaries.map((section) => (
-            <button
-              key={section.id}
-              type="button"
-              className={`tool-step-btn ${section.index === p ? "active" : ""} ${section.isComplete ? "complete" : ""}`}
-              onClick={() => goToSection(section.index)}
-            >
-              <div className="tool-step-top">
-                <span className="tool-step-index">{String(section.index + 1).padStart(2, "0")}</span>
-                <span className={`tool-step-status ${section.isComplete ? "complete" : "pending"}`}>
-                  {section.isComplete ? "Done" : `${section.answeredCount}/${section.totalCount}`}
-                </span>
+          {stepGroups.map((group) => {
+            const isGroupOpen = openSidebarStepId === group.id;
+
+            return (
+              <div key={group.id} className={`tool-step-group ${isGroupOpen ? "open" : ""}`}>
+                <button
+                  type="button"
+                  className={`tool-step-group-btn ${group.hasCurrent ? "active" : ""} ${group.isComplete ? "complete" : ""}`}
+                  onClick={() => toggleSidebarStep(group.id)}
+                  aria-expanded={isGroupOpen}
+                >
+                  <div className="tool-step-top">
+                    <span className="tool-step-index">{group.title}</span>
+                    <span className={`tool-step-status ${group.isComplete ? "complete" : "pending"}`}>
+                      {group.isComplete ? "Done" : `${group.answeredCount}/${group.totalCount}`}
+                    </span>
+                  </div>
+                  <span className="tool-step-meta">
+                    {group.totalCount === 0 ? "Overview" : `${group.items.length} sections`}
+                  </span>
+                </button>
+
+                {isGroupOpen ? (
+                  <div className="tool-step-group-list">
+                    {group.items.map((section) => (
+                      <button
+                        key={section.id}
+                        type="button"
+                        className={`tool-step-btn tool-step-child ${section.index === p ? "active" : ""} ${section.isComplete ? "complete" : ""}`}
+                        onClick={() => goToSection(section.index)}
+                      >
+                        <strong>{section.title}</strong>
+                        <span className="tool-step-meta">
+                          {section.totalCount === 0 ? "Overview" : section.isComplete ? "Done" : `${section.answeredCount}/${section.totalCount}`}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
-              <strong>{section.title}</strong>
-              <span className="tool-step-meta">
-                {section.totalCount === 0 ? "Overview" : `${section.answeredCount}/${section.totalCount} answered`}
-              </span>
-            </button>
-          ))}
+            );
+          })}
         </div>
       </aside>
 

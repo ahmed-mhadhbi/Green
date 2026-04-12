@@ -4,7 +4,7 @@ import { jsPDF } from "jspdf";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../api/client";
 import { useAuth } from "../context/AuthContext";
-import { getToolStepGroups } from "../data/toolNavigation";
+import { GBM_NAVIGATION_SECTIONS, getToolStepGroups } from "../data/toolNavigation";
 import { getToolByKey } from "../data/toolsCatalog";
 import { getToolSections } from "../data/toolSections";
 import { calculateToolProgress, getToolProjectType, resolveAnswersForTool, saveLocalToolAnswers } from "../utils/toolProgress";
@@ -221,6 +221,10 @@ const ecoCards = [
 ];
 const EMPTY_ANSWER = "(not answered yet)";
 
+function getGbmInstructionTitle(pageNumber) {
+  return GBM_NAVIGATION_SECTIONS[pageNumber - 1]?.title || null;
+}
+
 function hasAnswer(value) {
   if (value == null) return false;
   if (Array.isArray(value)) return value.length > 0;
@@ -312,7 +316,7 @@ export default function ToolQuestionnairePage() {
     if (isGbm) {
       return GBM_PAGES.map((pageDef) => ({
         id: `gbm-${pageDef.n}`,
-        title: pageDef.display || pageDef.title,
+        title: getGbmInstructionTitle(pageDef.n) || pageDef.display || pageDef.title,
         description: (pageDef.copy || [])[0] || "Complete this step before moving to the next one.",
         questionIds: buildQs(pageDef, cards, stages, stakeholderRows, vpRows).map((question) => question.id)
       }));
@@ -527,7 +531,7 @@ export default function ToolQuestionnairePage() {
 
     const sections = isGbm
       ? GBM_PAGES.map((pageDef) => ({
-          title: pageDef.display || `${pageDef.n}. ${pageDef.title}`,
+          title: getGbmInstructionTitle(pageDef.n) || pageDef.display || `${pageDef.n}. ${pageDef.title}`,
           items: buildQs(
             pageDef,
             Math.max(1, Number(answers.__cards || cards || 1)),
@@ -928,7 +932,7 @@ export default function ToolQuestionnairePage() {
   }
 
   function renderGbmPage() {
-    const pageLabel = page.display || `${page.n}. ${page.title}`;
+    const pageLabel = currentSection?.title || getGbmInstructionTitle(page.n) || page.display || `${page.n}. ${page.title}`;
     return (
       <>
         {renderSectionIntro(pageLabel, currentSection?.description, "Complete this step before moving to the next one.")}

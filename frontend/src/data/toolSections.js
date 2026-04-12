@@ -2,21 +2,21 @@ export const TOOL_SECTIONS = {
   "green-business-plan": [
     {
       id: "gbp-intro",
-      title: "Instruction 1.1:",
+      title: "Instruction 1.1: Tool overview",
       description: "Review how the Green Business Plan works before you start writing your answers.",
       stepGroup: 1,
       questionIds: []
     },
     {
       id: "gbp-launching",
-      title: "Instruction 1.2:",
+      title: "Instruction 1.2: Launching your business",
       description: "Use this step to understand the purpose of the business-planning phase and how it guides execution.",
       stepGroup: 1,
       questionIds: []
     },
     {
       id: "gbp-operations",
-      title: "Instruction 1.3:",
+      title: "Instruction 1.3: Operation and management plan",
       description: "Define how the business will operate day to day, who will run it, and what resources are required.",
       stepGroup: 1,
       questionIds: [
@@ -30,7 +30,7 @@ export const TOOL_SECTIONS = {
     },
     {
       id: "gbp-marketing",
-      title: "Instruction 1.4:",
+      title: "Instruction 1.4: Marketing plan",
       description: "Clarify your customers, positioning, channels, and the way your sustainable offer reaches the market.",
       stepGroup: 1,
       questionIds: [
@@ -45,7 +45,7 @@ export const TOOL_SECTIONS = {
     },
     {
       id: "gbp-financial",
-      title: "Instruction 1.5:",
+      title: "Instruction 1.5: Financial plan",
       description: "Document setup costs, forecasts, and the core numbers that prove the plan is viable.",
       stepGroup: 1,
       questionIds: [
@@ -61,7 +61,7 @@ export const TOOL_SECTIONS = {
     },
     {
       id: "gbp-legal",
-      title: "Instruction 1.6:",
+      title: "Instruction 1.6: Legal management plan",
       description: "Capture the legal structure, market protections, and regulatory context for the business.",
       stepGroup: 1,
       questionIds: [
@@ -72,7 +72,7 @@ export const TOOL_SECTIONS = {
     },
     {
       id: "gbp-measuring",
-      title: "Instruction 1.7:",
+      title: "Instruction 1.7: Measuring and looking forward",
       description: "Explain how you will forecast the future and measure impact so the business can improve continuously.",
       stepGroup: 1,
       questionIds: [
@@ -82,7 +82,7 @@ export const TOOL_SECTIONS = {
     },
     {
       id: "gbp-summary",
-      title: "Instruction 1.8:",
+      title: "Instruction 1.8: Executive summary and organization profile",
       description: "Assemble the core summary, organization profile, business overview, and investor-facing details.",
       stepGroup: 1,
       questionIds: [
@@ -126,14 +126,14 @@ export const TOOL_SECTIONS = {
     },
     {
       id: "gbp-take-off",
-      title: "Instruction 2:",
+      title: "Instruction 2: The business take off",
       description: "List the next execution steps that move the plan into action.",
       stepGroup: 2,
       questionIds: ["gbp_execution_next_steps"]
     },
     {
       id: "gbp-funding",
-      title: "Instruction 3:",
+      title: "Instruction 3: Get funded",
       description: "Summarize your funding strategy, target sources, and outreach plan.",
       stepGroup: 3,
       questionIds: ["gbp_funding_strategy"]
@@ -142,28 +142,28 @@ export const TOOL_SECTIONS = {
   "eco-design-tool": [
     {
       id: "eco-intro",
-      title: "Instruction 1.1:",
+      title: "Instruction 1.1: Tool overview",
       description: "Start with the eco-design overview so the team understands the purpose of the tool.",
       stepGroup: 1,
       questionIds: []
     },
     {
       id: "eco-journey",
-      title: "Instruction 1.2:",
+      title: "Instruction 1.2: Eco-design journey",
       description: "Review the eco-design journey and the logic of the steps before answering.",
       stepGroup: 1,
       questionIds: []
     },
     {
       id: "eco-scope",
-      title: "Instruction 1.3:",
+      title: "Instruction 1.3: Define your scope",
       description: "Choose whether you are eco-designing a product or a service.",
       stepGroup: 1,
       questionIds: ["eco_scope"]
     },
     {
       id: "eco-pack-bag",
-      title: "Instruction 1.4:",
+      title: "Instruction 1.4: Pack the bag",
       description: "Capture the project name, team, context, and sustainable vision for the redesign journey.",
       stepGroup: 1,
       questionIds: [
@@ -176,7 +176,7 @@ export const TOOL_SECTIONS = {
     },
     {
       id: "eco-life-cycle",
-      title: "Instruction 2:",
+      title: "Instruction 2: Current life cycle",
       description: "Describe the current life cycle of the offer across all major stages.",
       stepGroup: 2,
       questionIds: [
@@ -190,7 +190,7 @@ export const TOOL_SECTIONS = {
     },
     {
       id: "eco-assessment",
-      title: "Instruction 3:",
+      title: "Instruction 3: Assessment and action priorities",
       description: "Score the room for improvement and turn the hotspots into a practical action priority list.",
       stepGroup: 3,
       questionIds: [
@@ -207,21 +207,21 @@ export const TOOL_SECTIONS = {
   "access-to-market": [
     {
       id: "atm-intro",
-      title: "Instruction 1.1:",
+      title: "Instruction 1.1: Tool overview",
       description: "Review the purpose of the Access to Market tool and how it strengthens a sustainable brand.",
       stepGroup: 1,
       questionIds: []
     },
     {
       id: "atm-start",
-      title: "Instruction 1.2:",
+      title: "Instruction 1.2: How to get started",
       description: "Use this overview step to understand the modules before filling in the tool.",
       stepGroup: 1,
       questionIds: []
     },
     {
       id: "atm-brand-goals",
-      title: "Instruction 1.3:",
+      title: "Instruction 1.3: Align brand and business goals",
       description: "Align the brand with the business mission and summarize the origin story of the venture.",
       stepGroup: 1,
       questionIds: [
@@ -237,7 +237,7 @@ export const TOOL_SECTIONS = {
     },
     {
       id: "atm-positioning",
-      title: "Instruction 2.1:",
+      title: "Instruction 2.1: Brand positioning",
       description: "Define the strengths, positioning space, and manifesto that make the brand stand out.",
       stepGroup: 2,
       questionIds: [
@@ -253,7 +253,7 @@ export const TOOL_SECTIONS = {
     },
     {
       id: "atm-visual",
-      title: "Instruction 2.2:",
+      title: "Instruction 2.2: Visual identity",
       description: "Build the visual side of the brand and document the foundations of the style guide.",
       stepGroup: 2,
       questionIds: [
@@ -269,7 +269,7 @@ export const TOOL_SECTIONS = {
     },
     {
       id: "atm-narrative",
-      title: "Instruction 3:",
+      title: "Instruction 3: Narrative and key messages",
       description: "Clarify the audiences, core messages, and storytelling structure for the brand.",
       stepGroup: 3,
       questionIds: [
@@ -292,7 +292,7 @@ export const TOOL_SECTIONS = {
     },
     {
       id: "atm-offline",
-      title: "Instruction 4.1:",
+      title: "Instruction 4.1: Offline communications",
       description: "Plan market entry, sales channels, offline campaigns, and sustainable promotional materials.",
       stepGroup: 4,
       questionIds: [
@@ -306,7 +306,7 @@ export const TOOL_SECTIONS = {
     },
     {
       id: "atm-digital",
-      title: "Instruction 4.2:",
+      title: "Instruction 4.2: Digital communications",
       description: "Define the website structure and the digital channels, cadence, and metrics that support growth.",
       stepGroup: 4,
       questionIds: [
@@ -319,7 +319,7 @@ export const TOOL_SECTIONS = {
     },
     {
       id: "atm-stakeholders",
-      title: "Instruction 5.1:",
+      title: "Instruction 5.1: Stakeholder mapping",
       description: "Identify, map, and prioritize the external stakeholders who matter most.",
       stepGroup: 5,
       questionIds: [
@@ -330,7 +330,7 @@ export const TOOL_SECTIONS = {
     },
     {
       id: "atm-partnerships",
-      title: "Instruction 5.2:",
+      title: "Instruction 5.2: Partnership activation",
       description: "Select partnership opportunities and define how you will activate and evaluate them.",
       stepGroup: 5,
       questionIds: [
@@ -341,7 +341,7 @@ export const TOOL_SECTIONS = {
     },
     {
       id: "atm-glossary",
-      title: "Instruction 6:",
+      title: "Instruction 6: Glossary of key concepts",
       description: "Use the glossary as a reference while you complete the tool.",
       stepGroup: 6,
       questionIds: []
@@ -350,28 +350,28 @@ export const TOOL_SECTIONS = {
   "finance-toolkit": [
     {
       id: "finance-1",
-      title: "Instruction 1:",
+      title: "Instruction 1: Funding need",
       description: "Clarify the funding amount required for the next phase.",
       stepGroup: 1,
       questionIds: ["fundingNeed"]
     },
     {
       id: "finance-2",
-      title: "Instruction 2:",
+      title: "Instruction 2: Use of funds",
       description: "Explain how the financing will be used.",
       stepGroup: 2,
       questionIds: ["fundingUse"]
     },
     {
       id: "finance-3",
-      title: "Instruction 3:",
+      title: "Instruction 3: Revenue readiness",
       description: "Describe the maturity of the current revenue model.",
       stepGroup: 3,
       questionIds: ["revenueReadiness"]
     },
     {
       id: "finance-4",
-      title: "Instruction 4:",
+      title: "Instruction 4: Financial risk",
       description: "Identify the main financial risk to manage.",
       stepGroup: 4,
       questionIds: ["financialRisk"]
@@ -380,28 +380,28 @@ export const TOOL_SECTIONS = {
   "impact-measurement-toolkit": [
     {
       id: "impact-1",
-      title: "Instruction 1:",
+      title: "Instruction 1: Impact metric",
       description: "Define the main impact metric you will track.",
       stepGroup: 1,
       questionIds: ["impactMetric"]
     },
     {
       id: "impact-2",
-      title: "Instruction 2:",
+      title: "Instruction 2: Baseline",
       description: "Set the baseline that the impact metric will be compared against.",
       stepGroup: 2,
       questionIds: ["baseline"]
     },
     {
       id: "impact-3",
-      title: "Instruction 3:",
+      title: "Instruction 3: Data collection",
       description: "Explain how impact data will be collected.",
       stepGroup: 3,
       questionIds: ["dataCollection"]
     },
     {
       id: "impact-4",
-      title: "Instruction 4:",
+      title: "Instruction 4: Reporting frequency",
       description: "Choose the reporting frequency for impact measurement.",
       stepGroup: 4,
       questionIds: ["reportingFrequency"]

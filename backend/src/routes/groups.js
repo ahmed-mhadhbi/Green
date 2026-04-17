@@ -38,6 +38,20 @@ function sanitizeLessons(lessons = []) {
     .filter((lesson) => lesson.title);
 }
 
+async function loadUsersByIds(userIds = []) {
+  const uniqueIds = [...new Set((userIds || []).filter(Boolean))];
+  if (uniqueIds.length === 0) return {};
+
+  const docs = await Promise.all(
+    uniqueIds.map((uid) => db().collection("users").doc(uid).get())
+  );
+
+  return docs.reduce((acc, doc) => {
+    if (doc.exists) acc[doc.id] = doc.data();
+    return acc;
+  }, {});
+}
+
 router.post("/", authMiddleware, requireRole("mentor", "admin"), async (req, res, next) => {
   try {
     const { title, description = "", lessons = [] } = req.body;
@@ -72,7 +86,32 @@ router.get("/my", authMiddleware, async (req, res, next) => {
     if (req.userProfile.role === "mentor") {
       const snap = await db().collection("mentorGroups").where("mentorId", "==", req.user.uid).orderBy("createdAt", "desc").get();
       const groups = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      return res.json({ groups });
+      const membershipEntries = await Promise.all(
+        groups.map(async (group) => {
+          const membersSnap = await db().collection("groupMembers").where("groupId", "==", group.id).get();
+          return [
+            group.id,
+            membersSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+          ];
+        })
+      );
+      const membersByGroupId = Object.fromEntries(membershipEntries);
+      const userProfilesById = await loadUsersByIds(
+        membershipEntries.flatMap(([, members]) => members.map((member) => member.userId))
+      );
+      const groupsWithMembers = groups.map((group) => {
+        const members = (membersByGroupId[group.id] || []).map((member) => ({
+          ...member,
+          user: userProfilesById[member.userId] || null
+        }));
+
+        return {
+          ...group,
+          members,
+          memberCount: members.length
+        };
+      });
+      return res.json({ groups: groupsWithMembers });
     }
 
     if (req.userProfile.role === "entrepreneur") {

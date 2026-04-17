@@ -6,6 +6,7 @@ export default function Home() {
   const statsRef = useRef(null);
   const { firebaseUser, profile, logout } = useAuth();
   const firstName = (profile?.name || firebaseUser?.displayName || "User").split(" ")[0];
+  const dashboardLabel = profile?.role === "mentor" ? "Mentor" : "Dashboard";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -100,7 +101,7 @@ export default function Home() {
               <li><a href="#join-us" className="login-btn">Login</a></li>
             ) : (
               <>
-                <li><Link to={dashboardHref} className="login-btn">Dashboard</Link></li>
+                <li><Link to={dashboardHref} className="login-btn">{dashboardLabel}</Link></li>
                 <li><span className="home-user-pill">{firstName}</span></li>
                 <li><button className="home-signout-btn" onClick={logout}>Sign out</button></li>
               </>
@@ -132,7 +133,7 @@ export default function Home() {
         <section className="join-section" id="join-us">
           <div className="section-header animate-on-scroll">
             <h2>Join Us</h2>
-            <p>Choose your profile, fill the form, and apply on Toolbox.</p>
+            <p>Choose your profile, fill the form, and apply in Tools.</p>
           </div>
           <div className="join-choice-grid animate-on-scroll">
             <Link to="/join-us?track=entrepreneur" className="join-choice">
@@ -167,9 +168,9 @@ export default function Home() {
         <div className="cards-grid hub-cards">
           <Link to={toolsHref} className="service-card animate-on-scroll hub-link-card">
             <div className="card-icon">
-              <img src="/images/toolbox.png" alt="Toolbox" className="card-icon-image" />
+              <img src="/images/toolbox.png" alt="Tools" className="card-icon-image" />
             </div>
-            <h3>Toolbox</h3>
+            <h3>Tools</h3>
             <p>Open the guided sustainable business tools and questionnaires.</p>
           </Link>
           <Link to={productsHref} className="service-card animate-on-scroll hub-link-card">
@@ -328,7 +329,7 @@ export default function Home() {
           <div className="footer-section">
             <h3>Services</h3>
             <ul className="footer-links">
-              <li><a href="#hub">Toolbox</a></li>
+              <li><a href="#hub">Tools</a></li>
               <li><a href="#hub">Products</a></li>
               <li><a href="#hub">Community</a></li>
               <li><a href="#hub">Policy Hub</a></li>

@@ -243,7 +243,7 @@ export default function MentorDashboard() {
       {message ? <p className="info">{message}</p> : null}
 
       <section className="card span-2">
-        <h2>Mentor dashboard</h2>
+        <h2>Mentor</h2>
         <p>Create learning content, review projects, and schedule mentoring sessions.</p>
       </section>
 

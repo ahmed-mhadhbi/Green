@@ -126,7 +126,7 @@ export default function JoinUsPage() {
         <section className="join-header">
           <p className="auth-kicker">Join us</p>
           <h1>Choose your registration path</h1>
-          <p>Complete your profile to apply and continue in the Toolbox.</p>
+          <p>Complete your profile to apply and continue in Tools.</p>
         </section>
 
         <div className="join-track-grid">

@@ -1,32 +1,35 @@
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-const APP_NAV_ITEMS = [
-  {
-    to: "/dashboard",
-    label: "Dashboard",
-    note: "Overview, projects, and activity"
-  },
-  {
-    to: "/app/tools",
-    label: "Toolbox",
-    note: "Guided tools and questionnaires"
-  },
-  {
-    to: "/app/products",
-    label: "Products",
-    note: "Forms, sessions, and documents"
-  },
-  {
-    to: "/home",
-    label: "Public home",
-    note: "Back to the public website"
-  }
-];
+function getAppNavItems(role) {
+  return [
+    {
+      to: "/dashboard",
+      label: role === "mentor" ? "Mentor" : "Dashboard",
+      note: role === "mentor" ? "Mentor overview and related activity" : "Overview, projects, and activity"
+    },
+    {
+      to: "/app/tools",
+      label: "Tools",
+      note: role === "mentor" ? "Entrepreneur and group improvements" : "Guided tools and questionnaires"
+    },
+    {
+      to: "/app/products",
+      label: "Products",
+      note: "Forms, sessions, and documents"
+    },
+    {
+      to: "/home",
+      label: "Public home",
+      note: "Back to the public website"
+    }
+  ];
+}
 
 export default function Layout({ children }) {
   const { profile, firebaseUser, logout } = useAuth();
   const firstName = (profile?.name || firebaseUser?.displayName || "Founder").split(" ")[0];
+  const navItems = getAppNavItems(profile?.role);
 
   return (
     <div className="app-shell">
@@ -45,7 +48,7 @@ export default function Layout({ children }) {
 
       <div className="app-frame">
         <nav className="app-side-nav card" aria-label="Application navigation">
-          {APP_NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === "/dashboard"}>
               <span className="app-side-nav-label">{item.label}</span>
               <span className="app-side-nav-note">{item.note}</span>

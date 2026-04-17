@@ -31,6 +31,20 @@ function canAccessProject(role, uid, project) {
   return project.entrepreneurId === uid;
 }
 
+async function loadUserProfilesByIds(userIds = []) {
+  const uniqueIds = [...new Set((userIds || []).filter(Boolean))];
+  if (uniqueIds.length === 0) return {};
+
+  const docs = await Promise.all(
+    uniqueIds.map((uid) => db().collection("users").doc(uid).get())
+  );
+
+  return docs.reduce((acc, doc) => {
+    if (doc.exists) acc[doc.id] = doc.data();
+    return acc;
+  }, {});
+}
+
 router.post("/", authMiddleware, requireRole("entrepreneur"), async (req, res, next) => {
   try {
     const { title, type = "BMC", stage = "idea", mentorId = null, forms = {} } = req.body;
@@ -89,7 +103,19 @@ router.get("/my", authMiddleware, async (req, res, next) => {
       .map((doc) => ({ id: doc.id, ...doc.data() }))
       .filter((p) => canAccessProject(role, req.user.uid, p));
 
-    res.json({ projects });
+    const profileById = await loadUserProfilesByIds(projects.map((project) => project.entrepreneurId));
+    const enrichedProjects = projects.map((project) => {
+      const entrepreneurProfile = profileById[project.entrepreneurId] || null;
+
+      return {
+        ...project,
+        entrepreneurName: entrepreneurProfile?.name || "",
+        entrepreneurEmail: entrepreneurProfile?.email || "",
+        entrepreneurProfile
+      };
+    });
+
+    res.json({ projects: enrichedProjects });
   } catch (error) {
     next(error);
   }

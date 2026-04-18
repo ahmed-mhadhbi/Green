@@ -43,6 +43,19 @@ function getStepGroup(section, index) {
   return index + 1;
 }
 
+function getStepLabel(stepNumber) {
+  return `Step ${stepNumber}`;
+}
+
+function getStepTitle(sectionTitle, stepNumber) {
+  const cleanedTitle = String(sectionTitle || "")
+    .replace(/^instruction\s+\d+(?:\.\d+)?[a-z]?:\s*/i, "")
+    .replace(/^step\s+\d+(?:\.\d+)?[a-z]?:\s*/i, "")
+    .trim();
+
+  return cleanedTitle || getStepLabel(stepNumber);
+}
+
 export function getToolNavigationSections(tool) {
   if (!tool) return [];
   if (tool.key === GBM_KEY) return GBM_NAVIGATION_SECTIONS;
@@ -65,7 +78,8 @@ export function getToolStepGroups(tool) {
     groups.push({
       id: `${tool?.key || "tool"}-step-${stepNumber}`,
       stepNumber,
-      title: `Step ${stepNumber}:`,
+      label: getStepLabel(stepNumber),
+      title: getStepTitle(section?.title, stepNumber),
       items: [{ ...section, sectionIndex }]
     });
   });

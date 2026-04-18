@@ -976,11 +976,12 @@ export default function ToolQuestionnairePage() {
                   aria-expanded={isGroupOpen}
                 >
                   <div className="tool-step-top">
-                    <span className="tool-step-index">{group.title}</span>
+                    <span className="tool-step-index">{group.label}</span>
                     <span className={`tool-step-status ${group.isComplete ? "complete" : "pending"}`}>
                       {group.isComplete ? "Done" : `${group.answeredCount}/${group.totalCount}`}
                     </span>
                   </div>
+                  <strong className="tool-step-heading">{group.title}</strong>
                   <span className="tool-step-meta">
                     {group.totalCount === 0 ? "Overview" : `${group.items.length} sections`}
                   </span>

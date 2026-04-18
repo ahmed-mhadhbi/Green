@@ -1,12 +1,15 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { TOOLS_CATALOG } from "../data/toolsCatalog";
+import { getRoleLabel } from "../utils/roleLabels";
 
 export default function Home() {
   const statsRef = useRef(null);
+  const hubRef = useRef(null);
   const { firebaseUser, profile, logout } = useAuth();
-  const firstName = (profile?.name || firebaseUser?.displayName || "User").split(" ")[0];
-  const dashboardLabel = profile?.role === "mentor" ? "Mentor" : "Dashboard";
+  const [showHubToolsPopup, setShowHubToolsPopup] = useState(false);
+  const dashboardLabel = getRoleLabel(profile?.role, "Dashboard");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -81,6 +84,20 @@ export default function Home() {
     return () => statsObserver.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (!hubRef.current) return undefined;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowHubToolsPopup(entry.isIntersecting);
+      },
+      { threshold: 0.2, rootMargin: "-8% 0px -38% 0px" }
+    );
+
+    observer.observe(hubRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   const dashboardHref = firebaseUser ? "/dashboard" : "/login";
   const toolsHref = firebaseUser ? "/app/tools" : "/join-us";
   const productsHref = firebaseUser ? "/app/products" : "/join-us";
@@ -102,13 +119,30 @@ export default function Home() {
             ) : (
               <>
                 <li><Link to={dashboardHref} className="login-btn">{dashboardLabel}</Link></li>
-                <li><span className="home-user-pill">{firstName}</span></li>
                 <li><button className="home-signout-btn" onClick={logout}>Sign out</button></li>
               </>
             )}
           </ul>
         </div>
       </nav>
+
+      <div className={`hub-tools-popup ${showHubToolsPopup ? "visible" : ""}`} aria-hidden={!showHubToolsPopup}>
+        <div className="hub-tools-popup-head">
+          <span>Tools navigator</span>
+          <Link to={toolsHref}>Open all tools</Link>
+        </div>
+        <div className="hub-tools-popup-list">
+          {TOOLS_CATALOG.map((tool) => (
+            <Link
+              key={tool.key}
+              className="hub-tool-pill"
+              to={firebaseUser ? `/app/tools/${tool.key}` : toolsHref}
+            >
+              {tool.title}
+            </Link>
+          ))}
+        </div>
+      </div>
 
       <section className="hero" id="home">
         <video
@@ -160,13 +194,14 @@ export default function Home() {
         </section>
       ) : null}
 
-      <section className="pathfinder" id="hub">
-        <div className="section-header animate-on-scroll">
+      <section className="pathfinder" id="hub" ref={hubRef}>
+        <div className="section-header hub-section-header animate-on-scroll">
           <h2>Platform Hub</h2>
-          <p>Go directly to your work areas.</p>
+          <p>Move through the platform faster with lighter cards and direct tool access.</p>
         </div>
         <div className="cards-grid hub-cards">
           <Link to={toolsHref} className="service-card animate-on-scroll hub-link-card">
+            <span className="hub-card-tag">Core workspace</span>
             <div className="card-icon">
               <img src="/images/toolbox.png" alt="Tools" className="card-icon-image" />
             </div>
@@ -174,6 +209,7 @@ export default function Home() {
             <p>Open the guided sustainable business tools and questionnaires.</p>
           </Link>
           <Link to={productsHref} className="service-card animate-on-scroll hub-link-card">
+            <span className="hub-card-tag">Operations</span>
             <div className="card-icon">
               <img src="/images/product.avif" alt="Products" className="card-icon-image" />
             </div>
@@ -181,6 +217,7 @@ export default function Home() {
             <p>Access forms, workshops, application calls, and generated documents.</p>
           </Link>
           <Link to="/hub/fund" className="service-card animate-on-scroll hub-link-card">
+            <span className="hub-card-tag">Funding</span>
             <div className="card-icon">
               <img src="/images/funds.png" alt="Fund" className="card-icon-image" />
             </div>
@@ -188,6 +225,7 @@ export default function Home() {
             <p>Connecting sustainable businesses with financial actors in the national</p>
           </Link>
           <Link to="/hub/community" className="service-card animate-on-scroll hub-link-card">
+            <span className="hub-card-tag">Network</span>
             <div className="card-icon">
               <img src="/images/community.png" alt="Community" className="card-icon-image" />
             </div>
@@ -195,6 +233,7 @@ export default function Home() {
             <p>Meet and join the inspiring community of sustainable businesses across the national</p>
           </Link>
           <Link to="/hub/policy" className="service-card animate-on-scroll hub-link-card">
+            <span className="hub-card-tag">Insights</span>
             <div className="card-icon">
               <img src="/images/policy.png" alt="Policy Hub" className="card-icon-image" />
             </div>
@@ -202,6 +241,7 @@ export default function Home() {
             <p>Learn more about enabling policies for sustainable busniesses in the national</p>
           </Link>
           <Link to="/hub/ecosystems" className="service-card animate-on-scroll hub-link-card">
+            <span className="hub-card-tag">Ecosystem</span>
             <div className="card-icon">
               <img src="/images/ecosystems.png" alt="Ecosystems" className="card-icon-image" />
             </div>
@@ -209,6 +249,7 @@ export default function Home() {
             <p>Advancing sutainable and circular business development ecosystems in the national</p>
           </Link>
           <Link to="/hub/open-eco-innovation" className="service-card animate-on-scroll hub-link-card">
+            <span className="hub-card-tag">Innovation</span>
             <div className="card-icon">
               <img src="/images/open.png" alt="Open Eco-innovation" className="card-icon-image" />
             </div>

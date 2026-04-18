@@ -139,6 +139,19 @@ export default function ToolsPage() {
     return toolBrowser.find(({ tool }) => tool.key === activeToolKey) || toolBrowser[0] || null;
   }, [activeToolKey, toolBrowser]);
 
+  const toolStats = useMemo(() => {
+    const started = toolBrowser.filter(({ progress }) => progress.percent > 0).length;
+    const completed = toolBrowser.filter(({ progress }) => progress.percent >= 100).length;
+    const totalAnswers = toolBrowser.reduce((sum, { progress }) => sum + progress.answeredCount, 0);
+
+    return {
+      total: toolBrowser.length,
+      started,
+      completed,
+      totalAnswers
+    };
+  }, [toolBrowser]);
+
   const mentorEntrepreneurs = useMemo(() => {
     if (profile?.role !== "mentor") return [];
 
@@ -454,19 +467,44 @@ export default function ToolsPage() {
 
   return (
     <div className="content-stack">
-      <section className="card page-hero">
-        <div className="hero-kicker">Toolkit center</div>
-        <h2>Tools</h2>
-        <p>Choose a toolkit and continue your sustainability work from the left sidebar.</p>
+      <section className="card page-hero tools-page-hero">
+        <div className="tools-page-hero-head">
+          <div>
+            <div className="hero-kicker">Toolkit center</div>
+            <h2>Tools</h2>
+            <p>Browse every toolkit, jump into a step quickly, and keep your current progress visible.</p>
+          </div>
+          <Link className="btn primary" to={activeToolEntry ? `/app/tools/${activeToolEntry.tool.key}` : "/app/tools"}>
+            Continue current tool
+          </Link>
+        </div>
+        <div className="tools-page-stats">
+          <article className="tools-page-stat">
+            <span>Available tools</span>
+            <strong>{toolStats.total}</strong>
+          </article>
+          <article className="tools-page-stat">
+            <span>Started</span>
+            <strong>{toolStats.started}</strong>
+          </article>
+          <article className="tools-page-stat">
+            <span>Completed</span>
+            <strong>{toolStats.completed}</strong>
+          </article>
+          <article className="tools-page-stat">
+            <span>Total answers</span>
+            <strong>{toolStats.totalAnswers}</strong>
+          </article>
+        </div>
         {error ? <p className="error">{error}</p> : null}
       </section>
 
       {activeToolEntry ? (
-        <section className="tools-browser-shell">
+        <section className="tools-browser-shell tools-browser-shell-refined">
           <aside className="card tools-browser-sidebar">
             <div className="tools-browser-sidebar-head">
               <h3>Tools list</h3>
-              <p>Use the small left rail to switch quickly between toolkits.</p>
+              <p>Switch toolkits from here, then use the workspace panel to jump to a step.</p>
             </div>
 
             <div className="tools-browser-rail">
@@ -487,35 +525,76 @@ export default function ToolsPage() {
             </div>
           </aside>
 
-          <section className="card tools-browser-main">
-            <div className="tools-browser-main-head">
-              <div>
-                <h3>{activeToolEntry.tool.title}</h3>
-                <p>{activeToolEntry.tool.description}</p>
+          <section className="tools-browser-main">
+            <div className="card tools-browser-spotlight">
+              <div className="tools-browser-main-head">
+                <div>
+                  <span className="tools-browser-eyebrow">Active toolkit</span>
+                  <h3>{activeToolEntry.tool.title}</h3>
+                  <p>{activeToolEntry.tool.description}</p>
+                </div>
+                <Link className="btn primary" to={`/app/tools/${activeToolEntry.tool.key}`}>
+                  Open tool
+                </Link>
               </div>
-              <Link className="btn primary" to={`/app/tools/${activeToolEntry.tool.key}`}>
-                Open tool
-              </Link>
+
+              <div className="tool-browser-main-meta">
+                <span className="tool-percent-chip">{activeToolEntry.progress.percent}% complete</span>
+                <span className="tool-browser-status">
+                  {activeToolEntry.progress.answeredCount}/{activeToolEntry.progress.totalCount} answers
+                </span>
+                <span className="tool-browser-status">
+                  {activeToolEntry.steps.length} workflow steps
+                </span>
+              </div>
+
+              <div className="progress-track" aria-hidden="true">
+                <div className="progress-fill" style={{ width: `${activeToolEntry.progress.percent}%` }}></div>
+              </div>
             </div>
 
-            <div className="tool-browser-main-meta">
-              <span className="tool-percent-chip">{activeToolEntry.progress.percent}% complete</span>
-              <span className="tool-browser-status">
-                {activeToolEntry.progress.answeredCount}/{activeToolEntry.progress.totalCount} answers
-              </span>
+            <div className="card tools-browser-quick-jump">
+              <div>
+                <h3>Quick jump</h3>
+                <p>Open a specific page inside the current toolkit.</p>
+              </div>
+              <div className="tools-browser-chip-row">
+                {activeToolEntry.steps.map((step) => (
+                  <Link
+                    key={step.id}
+                    className="tools-browser-chip"
+                    to={`/app/tools/${activeToolEntry.tool.key}?section=${step.items[0]?.sectionIndex || 0}`}
+                  >
+                    <span className="tools-browser-chip-count">{step.label}</span>
+                    <strong className="tools-browser-chip-title">{step.title}</strong>
+                  </Link>
+                ))}
+              </div>
             </div>
 
-            <div className="progress-track" aria-hidden="true">
-              <div className="progress-fill" style={{ width: `${activeToolEntry.progress.percent}%` }}></div>
-            </div>
-
-            <div className="tool-browser-step-list tool-browser-step-list-compact">
+            <div className="tool-browser-step-list tool-browser-step-list-compact tools-browser-step-grid">
               {activeToolEntry.steps.map((step) => (
-                <div key={step.id} className="tool-browser-step-card">
+                <article key={step.id} className="tool-browser-step-card tool-browser-step-card-refined">
                   <div className="tool-browser-step-card-head">
-                    <strong>{step.title}</strong>
+                    <div>
+                      <span className="tools-browser-step-number">{step.label}</span>
+                      <strong>{step.title}</strong>
+                    </div>
                     <span className="tool-browser-step-meta">{step.items.length} pages</span>
                   </div>
+
+                  <p className="tools-browser-step-copy">
+                    {step.items.length === 1
+                      ? "A focused stage with one page to complete."
+                      : `A guided stage with ${step.items.length} pages to work through.`}
+                  </p>
+
+                  <Link
+                    className="tools-browser-step-cta"
+                    to={`/app/tools/${activeToolEntry.tool.key}?section=${step.items[0]?.sectionIndex || 0}`}
+                  >
+                    Open first page
+                  </Link>
 
                   <div className="tool-browser-page-list">
                     {step.items.map((item) => (
@@ -528,7 +607,7 @@ export default function ToolsPage() {
                       </Link>
                     ))}
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           </section>

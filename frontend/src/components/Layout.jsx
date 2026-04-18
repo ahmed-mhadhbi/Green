@@ -1,12 +1,15 @@
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getRoleLabel } from "../utils/roleLabels";
 
 function getAppNavItems(role) {
+  const roleLabel = getRoleLabel(role, "Dashboard");
+
   return [
     {
       to: "/dashboard",
-      label: role === "mentor" ? "Mentor" : "Dashboard",
-      note: role === "mentor" ? "Mentor overview and related activity" : "Overview, projects, and activity"
+      label: roleLabel,
+      note: `${roleLabel} overview and activity`
     },
     {
       to: "/app/tools",
@@ -41,7 +44,6 @@ export default function Layout({ children }) {
         </div>
         <div className="topbar-right">
           <span className="welcome">Hi, {firstName}</span>
-          <span className="badge">{profile?.role || "guest"}</span>
           <button className="btn" onClick={logout}>Logout</button>
         </div>
       </header>

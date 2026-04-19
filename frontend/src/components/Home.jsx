@@ -1,8 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { TOOLS_CATALOG } from "../data/toolsCatalog";
 import { getRoleLabel } from "../utils/roleLabels";
+
+const HUB_NAV_ITEMS = [
+  { key: "tools", title: "Tools", getTo: ({ toolsHref }) => toolsHref },
+  { key: "products", title: "Products", getTo: ({ productsHref }) => productsHref },
+  { key: "fund", title: "Fund", getTo: () => "/hub/fund" },
+  { key: "community", title: "Community", getTo: () => "/hub/community" },
+  { key: "policy", title: "Policy Hub", getTo: () => "/hub/policy" },
+  { key: "ecosystems", title: "Ecosystems", getTo: () => "/hub/ecosystems" },
+  { key: "open-eco-innovation", title: "Open Eco-innovation", getTo: () => "/hub/open-eco-innovation" },
+];
 
 export default function Home() {
   const statsRef = useRef(null);
@@ -129,16 +138,16 @@ export default function Home() {
       <div className={`hub-tools-popup ${showHubToolsPopup ? "visible" : ""}`} aria-hidden={!showHubToolsPopup}>
         <div className="hub-tools-popup-head">
           <span>Tools navigator</span>
-          <Link to={toolsHref}>Open all tools</Link>
+          <a href="#hub">Platform Hub</a>
         </div>
         <div className="hub-tools-popup-list">
-          {TOOLS_CATALOG.map((tool) => (
+          {HUB_NAV_ITEMS.map((item) => (
             <Link
-              key={tool.key}
+              key={item.key}
               className="hub-tool-pill"
-              to={firebaseUser ? `/app/tools/${tool.key}` : toolsHref}
+              to={item.getTo({ toolsHref, productsHref })}
             >
-              {tool.title}
+              {item.title}
             </Link>
           ))}
         </div>

@@ -8,7 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import {
   buildToolProgressList,
   calculateToolProgress,
-  getToolProjectType
+  getToolForProjectType
 } from "../utils/toolProgress";
 
 const STATUS_LABELS = {
@@ -41,7 +41,7 @@ function formatProjectStatus(status) {
 }
 
 function getProjectTool(project) {
-  return TOOLS_CATALOG.find((tool) => getToolProjectType(tool.key) === project.type) || null;
+  return getToolForProjectType(project?.type);
 }
 
 function getProjectProgress(project) {
@@ -49,7 +49,7 @@ function getProjectProgress(project) {
   if (!tool) {
     return {
       toolKey: null,
-      toolTitle: project.title,
+      toolTitle: project?.title || "Project",
       percent: 0,
       answeredCount: 0,
       totalCount: 0,
@@ -58,51 +58,88 @@ function getProjectProgress(project) {
   }
 
   const progress = calculateToolProgress(tool, project.forms || {});
+  const activity = project?.toolActivity?.[tool.key] || null;
+  const percent = Number.isFinite(Number(activity?.progressPercent)) ? Number(activity.progressPercent) : progress.percent;
+  const answeredCount = Number.isFinite(Number(activity?.answeredCount)) ? Number(activity.answeredCount) : progress.answeredCount;
+  const totalCount = Number.isFinite(Number(activity?.totalCount)) ? Number(activity.totalCount) : progress.totalCount;
+  let status = "Not started";
+  if (percent > 0 && percent < 100) status = "In progress";
+  if (percent >= 100) status = "Completed";
+
   return {
     toolKey: tool.key,
     toolTitle: tool.title,
-    ...progress
+    ...progress,
+    percent,
+    answeredCount,
+    totalCount,
+    status
   };
+}
+
+function getProjectLastOpen(project) {
+  const tool = getProjectTool(project);
+  if (tool && project?.toolActivity?.[tool.key]?.lastOpenedAt) {
+    return project.toolActivity[tool.key].lastOpenedAt;
+  }
+  return project?.updatedAt || null;
+}
+
+function getLatestProject(projects = []) {
+  return [...projects].sort((a, b) => getTimestampValue(b.updatedAt) - getTimestampValue(a.updatedAt))[0] || null;
 }
 
 export default function ToolsPage() {
   const { token, profile, firebaseUser } = useAuth();
   const [projects, setProjects] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [mentorRequests, setMentorRequests] = useState([]);
   const [error, setError] = useState("");
+  const [mentorMessage, setMentorMessage] = useState("");
   const [activeToolKey, setActiveToolKey] = useState(TOOLS_CATALOG[0]?.key || null);
+  const [selectedEntrepreneurId, setSelectedEntrepreneurId] = useState(null);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [reviewRecommendation, setReviewRecommendation] = useState("");
+  const [deletionReason, setDeletionReason] = useState("");
+  const [lessonTitle, setLessonTitle] = useState("");
+  const [lessonDescription, setLessonDescription] = useState("");
+  const [lessonFile, setLessonFile] = useState(null);
+
+  async function loadData() {
+    if (!token) return;
+
+    try {
+      setError("");
+
+      if (profile?.role === "mentor") {
+        const [projectsRes, groupsRes, requestsRes] = await Promise.all([
+          apiRequest("/projects/my", { token }),
+          apiRequest("/groups/my", { token }),
+          apiRequest("/projects/deletion-requests/my", { token })
+        ]);
+
+        setProjects(projectsRes.projects || []);
+        setGroups(groupsRes.groups || []);
+        setMentorRequests(requestsRes.requests || []);
+        return;
+      }
+
+      if (profile?.role === "entrepreneur") {
+        const res = await apiRequest("/projects/my", { token });
+        setProjects(res.projects || []);
+      } else {
+        setProjects([]);
+      }
+
+      setGroups([]);
+      setMentorRequests([]);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
 
   useEffect(() => {
-    async function loadData() {
-      if (!token) return;
-
-      try {
-        setError("");
-
-        if (profile?.role === "mentor") {
-          const [projectsRes, groupsRes] = await Promise.all([
-            apiRequest("/projects/my", { token }),
-            apiRequest("/groups/my", { token })
-          ]);
-
-          setProjects(projectsRes.projects || []);
-          setGroups(groupsRes.groups || []);
-          return;
-        }
-
-        if (profile?.role === "entrepreneur") {
-          const res = await apiRequest("/projects/my", { token });
-          setProjects(res.projects || []);
-        } else {
-          setProjects([]);
-        }
-
-        setGroups([]);
-      } catch (err) {
-        setError(err.message);
-      }
-    }
-
     loadData();
   }, [token, profile?.role]);
 
@@ -199,13 +236,18 @@ export default function ToolsPage() {
 
     return [...summaryMap.values()]
       .map((entry) => {
-        const projectSummaries = entry.projects.map((project) => ({
-          project,
-          progress: getProjectProgress(project)
-        }));
-        const latestProject = [...entry.projects].sort(
-          (a, b) => getTimestampValue(b.updatedAt) - getTimestampValue(a.updatedAt)
-        )[0] || null;
+        const projectSummaries = entry.projects.map((project) => {
+          const progress = getProjectProgress(project);
+          const tool = getProjectTool(project);
+
+          return {
+            project,
+            progress,
+            review: tool ? project.mentorToolReviews?.[tool.key] || null : null
+          };
+        });
+        const latestProject = getLatestProject(entry.projects);
+        const latestProjectTool = getProjectTool(latestProject);
 
         return {
           ...entry,
@@ -214,7 +256,9 @@ export default function ToolsPage() {
           feedbackCount: entry.projects.reduce((sum, project) => sum + (project.feedback || []).length, 0),
           validatedCount: entry.projects.filter((project) => project.status === "validated").length,
           needsCorrectionsCount: entry.projects.filter((project) => project.status === "needs_corrections").length,
-          latestProject
+          latestProject,
+          latestProjectTool,
+          latestReview: latestProjectTool ? latestProject?.mentorToolReviews?.[latestProjectTool.key] || null : null
         };
       })
       .sort((a, b) => {
@@ -241,11 +285,9 @@ export default function ToolsPage() {
           .map((member) => entrepreneurMap.get(member.id))
           .filter(Boolean);
         const memberProjects = relatedEntrepreneurs.flatMap((entrepreneur) => entrepreneur.projects);
-        const latestActivity = memberProjects.sort(
-          (a, b) => getTimestampValue(b.updatedAt) - getTimestampValue(a.updatedAt)
-        )[0]?.updatedAt || members.sort(
-          (a, b) => getTimestampValue(b.joinedAt) - getTimestampValue(a.joinedAt)
-        )[0]?.joinedAt || null;
+        const latestActivity = getLatestProject(memberProjects)?.updatedAt
+          || [...members].sort((a, b) => getTimestampValue(b.joinedAt) - getTimestampValue(a.joinedAt))[0]?.joinedAt
+          || null;
 
         return {
           ...group,
@@ -273,14 +315,187 @@ export default function ToolsPage() {
     };
   }, [mentorEntrepreneurs, mentorGroupSummaries.length, profile?.role, projects]);
 
+  const mentorRequestsByEntrepreneur = useMemo(() => {
+    return mentorRequests.reduce((acc, request) => {
+      const current = acc[request.entrepreneurId];
+      if (!current || getTimestampValue(request.updatedAt || request.createdAt) > getTimestampValue(current.updatedAt || current.createdAt)) {
+        acc[request.entrepreneurId] = request;
+      }
+      return acc;
+    }, {});
+  }, [mentorRequests]);
+
+  const mentorProjectRows = useMemo(() => {
+    return mentorEntrepreneurs.flatMap((entrepreneur) => {
+      if (!entrepreneur.projects.length) {
+        return [{
+          key: `${entrepreneur.id}-no-project`,
+          entrepreneur,
+          project: null,
+          progress: { percent: 0, answeredCount: 0, totalCount: 0 },
+          review: null,
+          lastOpen: null
+        }];
+      }
+
+      return entrepreneur.projects
+        .map((project) => {
+          const tool = getProjectTool(project);
+          return {
+            key: `${entrepreneur.id}-${project.id}`,
+            entrepreneur,
+            project,
+            progress: getProjectProgress(project),
+            review: tool ? project.mentorToolReviews?.[tool.key] || null : null,
+            lastOpen: getProjectLastOpen(project)
+          };
+        })
+        .sort((left, right) => getTimestampValue(right.lastOpen || right.project?.updatedAt) - getTimestampValue(left.lastOpen || left.project?.updatedAt));
+    });
+  }, [mentorEntrepreneurs]);
+
+  const selectedEntrepreneur = useMemo(() => {
+    return mentorEntrepreneurs.find((entrepreneur) => entrepreneur.id === selectedEntrepreneurId) || mentorEntrepreneurs[0] || null;
+  }, [mentorEntrepreneurs, selectedEntrepreneurId]);
+
+  const selectedGroup = useMemo(() => {
+    return groups.find((group) => group.id === selectedGroupId) || groups[0] || null;
+  }, [groups, selectedGroupId]);
+
+  const selectedProject = useMemo(() => {
+    if (!selectedEntrepreneur) return null;
+    return selectedEntrepreneur.projects.find((project) => project.id === selectedProjectId)
+      || selectedEntrepreneur.latestProject
+      || selectedEntrepreneur.projects[0]
+      || null;
+  }, [selectedEntrepreneur, selectedProjectId]);
+
+  const selectedProjectTool = useMemo(() => getProjectTool(selectedProject), [selectedProject]);
+  const selectedProjectProgress = useMemo(() => (selectedProject ? getProjectProgress(selectedProject) : null), [selectedProject]);
+  const selectedProjectReview = useMemo(() => {
+    if (!selectedProject || !selectedProjectTool) return null;
+    return selectedProject.mentorToolReviews?.[selectedProjectTool.key] || null;
+  }, [selectedProject, selectedProjectTool]);
+  const selectedDeletionRequest = selectedEntrepreneur ? mentorRequestsByEntrepreneur[selectedEntrepreneur.id] || null : null;
+
+  useEffect(() => {
+    if (!mentorEntrepreneurs.length) {
+      setSelectedEntrepreneurId(null);
+      return;
+    }
+
+    if (!selectedEntrepreneurId || !mentorEntrepreneurs.some((item) => item.id === selectedEntrepreneurId)) {
+      setSelectedEntrepreneurId(mentorEntrepreneurs[0].id);
+    }
+  }, [mentorEntrepreneurs, selectedEntrepreneurId]);
+
+  useEffect(() => {
+    if (!selectedEntrepreneur) {
+      setSelectedProjectId("");
+      return;
+    }
+
+    if (selectedProjectId && selectedEntrepreneur.projects.some((project) => project.id === selectedProjectId)) {
+      return;
+    }
+
+    const nextProject = selectedEntrepreneur.latestProject || selectedEntrepreneur.projects[0] || null;
+    setSelectedProjectId(nextProject?.id || "");
+  }, [selectedEntrepreneur, selectedProjectId]);
+
+  useEffect(() => {
+    if (!groups.length) {
+      setSelectedGroupId("");
+      return;
+    }
+
+    if (!selectedGroupId || !groups.some((group) => group.id === selectedGroupId)) {
+      setSelectedGroupId(groups[0].id);
+    }
+  }, [groups, selectedGroupId]);
+
+  useEffect(() => {
+    setReviewRecommendation(selectedProjectReview?.recommendation || selectedProjectReview?.comment || "");
+    setDeletionReason("");
+    setLessonTitle("");
+    setLessonDescription("");
+    setLessonFile(null);
+  }, [selectedProject?.id, selectedProjectReview?.reviewedAt]);
+
+  async function submitToolReview(event) {
+    event.preventDefault();
+    if (!selectedProject || !selectedProjectTool) return;
+
+    try {
+      await apiRequest(`/projects/${selectedProject.id}/tool-review`, {
+        method: "POST",
+        token,
+        body: {
+          toolKey: selectedProjectTool.key,
+          verified: true,
+          recommendation: reviewRecommendation
+        }
+      });
+      setMentorMessage("Answers verified and recommendation saved.");
+      await loadData();
+    } catch (err) {
+      setMentorMessage(err.message || "Failed to verify answers.");
+    }
+  }
+
+  async function submitDeletionRequest(event) {
+    event.preventDefault();
+    if (!selectedEntrepreneur) return;
+
+    try {
+      await apiRequest(`/projects/entrepreneurs/${selectedEntrepreneur.id}/delete-request`, {
+        method: "POST",
+        token,
+        body: { reason: deletionReason }
+      });
+      setMentorMessage("Deletion request sent to admin for approval.");
+      await loadData();
+    } catch (err) {
+      setMentorMessage(err.message || "Failed to send deletion request.");
+    }
+  }
+
+  async function uploadPrivateLesson(event) {
+    event.preventDefault();
+    if (!selectedGroup || !lessonFile) return;
+
+    try {
+      const formData = new FormData();
+      formData.append("title", lessonTitle);
+      formData.append("description", lessonDescription);
+      formData.append("file", lessonFile);
+
+      await apiRequest(`/groups/${selectedGroup.id}/lessons/upload`, {
+        method: "POST",
+        token,
+        body: formData,
+        formData: true
+      });
+
+      setLessonTitle("");
+      setLessonDescription("");
+      setLessonFile(null);
+      setMentorMessage("Private screen record uploaded for the whole group.");
+      await loadData();
+    } catch (err) {
+      setMentorMessage(err.message || "Failed to upload lesson.");
+    }
+  }
+
   if (profile?.role === "mentor") {
     return (
       <div className="content-stack">
         <section className="card page-hero mentor-tools-hero">
           <div className="hero-kicker">Mentor workspace</div>
           <h2>Mentor</h2>
-          <p>See the improvements of your related entrepreneurs and groups in one place.</p>
+          <p>Track real project activity, verify answers, upload private screen records to groups, and request deletions for admin approval.</p>
           {error ? <p className="error">{error}</p> : null}
+          {mentorMessage ? <p className="info">{mentorMessage}</p> : null}
         </section>
 
         <section className="mentor-tools-stats">
@@ -309,90 +524,294 @@ export default function ToolsPage() {
         <section className="card">
           <div className="mentor-section-head">
             <div>
-              <h3>Entrepreneur improvements</h3>
-              <p>Track project progress, latest status, and feedback activity.</p>
+              <h3>Entrepreneurs table</h3>
+              <p>Name, project, etape, status, progression, last open, and edit options in one table.</p>
             </div>
           </div>
 
-          {mentorEntrepreneurs.length === 0 ? (
+          {mentorProjectRows.length === 0 ? (
             <p>No related entrepreneurs yet.</p>
           ) : (
-            <div className="mentor-improvement-grid">
-              {mentorEntrepreneurs.map((entrepreneur) => (
-                <article key={entrepreneur.id} className="mentor-improvement-card">
+            <div className="table-wrap mentor-table-wrap">
+              <table className="mentor-entrepreneur-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Project</th>
+                    <th>Etape</th>
+                    <th>Status</th>
+                    <th>Progression</th>
+                    <th>Last open</th>
+                    <th>Edit option</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mentorProjectRows.map((row) => {
+                    const latestRequest = mentorRequestsByEntrepreneur[row.entrepreneur.id];
+
+                    return (
+                      <tr
+                        key={row.key}
+                        className={row.review?.verified ? "mentor-table-row mentor-table-row-verified" : "mentor-table-row"}
+                      >
+                        <td>
+                          <strong>{row.entrepreneur.name}</strong>
+                          <p>{row.entrepreneur.email || row.entrepreneur.id}</p>
+                        </td>
+                        <td>{row.project?.title || "No project yet"}</td>
+                        <td>{row.project?.stage || "-"}</td>
+                        <td>
+                          <span className={`status-pill ${row.project?.status || "draft"}`}>
+                            {formatProjectStatus(row.project?.status)}
+                          </span>
+                        </td>
+                        <td>
+                          <strong>{row.progress.percent}%</strong>
+                          {row.review?.verified ? <span className="mentor-inline-chip">Green verified</span> : null}
+                        </td>
+                        <td>{formatDateLabel(row.lastOpen)}</td>
+                        <td>
+                          <div className="mentor-table-actions">
+                            <button
+                              className="btn"
+                              type="button"
+                              onClick={() => {
+                                setSelectedEntrepreneurId(row.entrepreneur.id);
+                                setSelectedProjectId(row.project?.id || "");
+                              }}
+                            >
+                              Edit
+                            </button>
+                            {latestRequest ? (
+                              <span className={`status-pill status-pill-${latestRequest.status}`}>
+                                {latestRequest.status}
+                              </span>
+                            ) : null}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        {selectedEntrepreneur ? (
+          <section className="card mentor-editor-card">
+            <div className="mentor-card-head">
+              <div>
+                <h3>Edit entrepreneur</h3>
+                <p>{selectedEntrepreneur.name} - {selectedEntrepreneur.email || selectedEntrepreneur.id}</p>
+              </div>
+              {selectedDeletionRequest ? (
+                <span className={`status-pill status-pill-${selectedDeletionRequest.status}`}>
+                  Delete request: {selectedDeletionRequest.status}
+                </span>
+              ) : null}
+            </div>
+
+            {selectedEntrepreneur.projects.length > 1 ? (
+              <div className="form-stack">
+                <label htmlFor="mentor-project-select"><strong>Select project</strong></label>
+                <select
+                  id="mentor-project-select"
+                  value={selectedProjectId}
+                  onChange={(event) => setSelectedProjectId(event.target.value)}
+                >
+                  {selectedEntrepreneur.projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+
+            {selectedProject ? (
+              <>
+                <div className="mentor-meta-grid">
+                  <div>
+                    <span>Project</span>
+                    <strong>{selectedProject.title}</strong>
+                  </div>
+                  <div>
+                    <span>Tool</span>
+                    <strong>{selectedProjectTool?.title || "No linked tool"}</strong>
+                  </div>
+                  <div>
+                    <span>Status</span>
+                    <strong>{formatProjectStatus(selectedProject.status)}</strong>
+                  </div>
+                  <div>
+                    <span>Progress</span>
+                    <strong>{selectedProjectProgress?.percent || 0}%</strong>
+                  </div>
+                </div>
+
+                <div className="mentor-editor-grid mentor-editor-grid-two">
+                  <article className="mentor-editor-panel">
+                    <div className="mentor-card-head">
+                      <div>
+                        <h3>Verify answers</h3>
+                        <p>Review the entrepreneur answers and send a recommendation.</p>
+                      </div>
+                      {selectedProjectReview?.verified ? <span className="mentor-inline-chip">Verified</span> : null}
+                    </div>
+
+                    {selectedProjectTool ? (
+                      <>
+                        <Link className="btn" to={`/app/tools/${selectedProjectTool.key}?projectId=${selectedProject.id}`}>
+                          Open answers
+                        </Link>
+                        <form className="form-stack" onSubmit={submitToolReview}>
+                          <textarea
+                            rows="4"
+                            placeholder="Type the recommendation that will pop when the entrepreneur opens the tool again"
+                            value={reviewRecommendation}
+                            onChange={(event) => setReviewRecommendation(event.target.value)}
+                          />
+                          <button className="btn primary" type="submit">Verify and send comment</button>
+                        </form>
+                      </>
+                    ) : (
+                      <p className="mentor-empty-note">This project is not linked to a tool review page yet.</p>
+                    )}
+                  </article>
+                </div>
+              </>
+            ) : (
+              <p className="mentor-empty-note">This entrepreneur does not have a project yet.</p>
+            )}
+
+            <div className="mentor-editor-grid mentor-editor-grid-single">
+              <article className="mentor-editor-panel">
+                <div className="mentor-card-head">
+                  <div>
+                    <h3>Delete entrepreneur</h3>
+                    <p>Write why this entrepreneur should be deleted. Admin approval is required.</p>
+                  </div>
+                </div>
+
+                <form className="form-stack" onSubmit={submitDeletionRequest}>
+                  <textarea
+                    rows="4"
+                    placeholder="Explain why you are requesting the deletion"
+                    value={deletionReason}
+                    onChange={(event) => setDeletionReason(event.target.value)}
+                    required
+                  />
+                  <button className="btn" type="submit">Send delete request</button>
+                </form>
+
+                {selectedDeletionRequest?.reason ? (
+                  <p className="mentor-update-note">
+                    Latest request: {selectedDeletionRequest.reason}
+                  </p>
+                ) : null}
+              </article>
+            </div>
+          </section>
+        ) : null}
+
+        <section className="card mentor-editor-card">
+          <div className="mentor-card-head">
+            <div>
+              <h3>Private screen records by group</h3>
+              <p>Upload one lesson once and every registered entrepreneur in that group can access it.</p>
+            </div>
+          </div>
+
+          {selectedGroup ? (
+            <>
+              {groups.length > 1 ? (
+                <div className="form-stack">
+                  <label htmlFor="mentor-group-select"><strong>Select group</strong></label>
+                  <select
+                    id="mentor-group-select"
+                    value={selectedGroupId}
+                    onChange={(event) => setSelectedGroupId(event.target.value)}
+                  >
+                    {groups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+
+              <div className="mentor-editor-grid mentor-editor-grid-two">
+                <article className="mentor-editor-panel">
                   <div className="mentor-card-head">
                     <div>
-                      <h3>{entrepreneur.name}</h3>
-                      <p>{entrepreneur.email || entrepreneur.id}</p>
+                      <h3>{selectedGroup.title}</h3>
+                      <p>{selectedGroup.memberCount || 0} registered entrepreneurs</p>
                     </div>
-                    <span className={`status-pill ${entrepreneur.latestProject?.status || "draft"}`}>
-                      {formatProjectStatus(entrepreneur.latestProject?.status)}
-                    </span>
+                    <span className="mentor-group-badge">{(selectedGroup.lessons || []).length} lessons</span>
                   </div>
 
-                  <div className="mentor-score-row">
-                    <strong>{entrepreneur.avgProgress}%</strong>
-                    <span>Average improvement</span>
-                  </div>
-                  <div className="progress-track" aria-hidden="true">
-                    <div className="progress-fill" style={{ width: `${entrepreneur.avgProgress}%` }}></div>
-                  </div>
+                  <form className="form-stack" onSubmit={uploadPrivateLesson}>
+                    <input
+                      placeholder="Screen record title"
+                      value={lessonTitle}
+                      onChange={(event) => setLessonTitle(event.target.value)}
+                      required
+                    />
+                    <textarea
+                      rows="3"
+                      placeholder="What should entrepreneurs learn from this screen record?"
+                      value={lessonDescription}
+                      onChange={(event) => setLessonDescription(event.target.value)}
+                    />
+                    <input
+                      type="file"
+                      onChange={(event) => setLessonFile(event.target.files?.[0] || null)}
+                      required
+                    />
+                    <button className="btn primary" type="submit">Upload to group</button>
+                  </form>
+                </article>
 
-                  <div className="mentor-meta-grid">
+                <article className="mentor-editor-panel">
+                  <div className="mentor-card-head">
                     <div>
-                      <span>Projects</span>
-                      <strong>{entrepreneur.projects.length}</strong>
-                    </div>
-                    <div>
-                      <span>Feedback</span>
-                      <strong>{entrepreneur.feedbackCount}</strong>
-                    </div>
-                    <div>
-                      <span>Validated</span>
-                      <strong>{entrepreneur.validatedCount}</strong>
-                    </div>
-                    <div>
-                      <span>Corrections</span>
-                      <strong>{entrepreneur.needsCorrectionsCount}</strong>
+                      <h3>Registered entrepreneurs</h3>
+                      <p>These members will see the uploaded screen records.</p>
                     </div>
                   </div>
-
-                  {entrepreneur.groupMemberships.length > 0 ? (
+                  {selectedGroup.members?.length ? (
                     <div className="mentor-chip-row">
-                      {entrepreneur.groupMemberships.map((group) => (
-                        <span key={group.id} className="mentor-chip">{group.title}</span>
+                      {selectedGroup.members.map((member) => (
+                        <span key={`${selectedGroup.id}-${member.userId}`} className="mentor-chip">
+                          {member.user?.name || member.userId}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mentor-empty-note">No entrepreneurs registered in this group yet.</p>
+                  )}
+
+                  {(selectedGroup.lessons || []).length ? (
+                    <div className="mentor-project-list">
+                      {(selectedGroup.lessons || []).map((lesson, index) => (
+                        <div key={`${selectedGroup.id}-lesson-${index}`} className="mentor-project-item">
+                          <div className="mentor-project-head">
+                            <strong>{lesson.title}</strong>
+                            <span>{formatDateLabel(lesson.uploadedAt)}</span>
+                          </div>
+                          {lesson.content ? <p>{lesson.content}</p> : null}
+                          <p>{lesson.videoUrl ? "Video lesson" : "Document lesson"}</p>
+                        </div>
                       ))}
                     </div>
                   ) : null}
-
-                  <div className="mentor-project-list">
-                    {entrepreneur.projectSummaries.length === 0 ? (
-                      <p className="mentor-empty-note">No project progress yet.</p>
-                    ) : (
-                      entrepreneur.projectSummaries.map(({ project, progress }) => (
-                        <div key={project.id} className="mentor-project-item">
-                          <div className="mentor-project-head">
-                            <strong>{progress.toolTitle}</strong>
-                            <span>{progress.percent}%</span>
-                          </div>
-                          <div className="progress-track" aria-hidden="true">
-                            <div className="progress-fill" style={{ width: `${progress.percent}%` }}></div>
-                          </div>
-                          <p>
-                            {progress.answeredCount}/{progress.totalCount} answers
-                            {project.status ? ` • ${formatProjectStatus(project.status)}` : ""}
-                          </p>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  <p className="mentor-update-note">
-                    Last update: {formatDateLabel(entrepreneur.latestProject?.updatedAt)}
-                  </p>
                 </article>
-              ))}
-            </div>
+              </div>
+            </>
+          ) : (
+            <p className="mentor-empty-note">Create a group first to upload private screen records.</p>
           )}
         </section>
 

@@ -10,15 +10,23 @@ const router = express.Router();
 
 const uploadDir = path.join(process.cwd(), "uploads", "projects");
 fs.mkdirSync(uploadDir, { recursive: true });
+const privateLessonUploadDir = path.join(process.cwd(), "uploads", "private-lessons");
+fs.mkdirSync(privateLessonUploadDir, { recursive: true });
+
+function buildSafeFilename(file) {
+  return `${Date.now()}-${file.originalname.replace(/\s+/g, "_")}`;
+}
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const safe = `${Date.now()}-${file.originalname.replace(/\s+/g, "_")}`;
-    cb(null, safe);
-  }
+  filename: (_req, file, cb) => cb(null, buildSafeFilename(file))
 });
 const upload = multer({ storage });
+const privateLessonStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, privateLessonUploadDir),
+  filename: (_req, file, cb) => cb(null, buildSafeFilename(file))
+});
+const privateLessonUpload = multer({ storage: privateLessonStorage });
 
 const PROJECT_TYPES = ["BMC", "GREEN_BMC", "GREEN_BUSINESS_PLAN"];
 const PROJECT_STAGES = ["idea", "creation", "growth"];
@@ -29,6 +37,35 @@ function canAccessProject(role, uid, project) {
   if (role === "business_support") return true;
   if (role === "mentor") return !project.mentorId || project.mentorId === uid;
   return project.entrepreneurId === uid;
+}
+
+function sanitizeText(value) {
+  return String(value || "").trim();
+}
+
+async function loadMentorEntrepreneurLinks(mentorId, entrepreneurId) {
+  const [projectSnap, membershipSnap] = await Promise.all([
+    db().collection("projects").where("entrepreneurId", "==", entrepreneurId).get(),
+    db().collection("groupMembers").where("userId", "==", entrepreneurId).get()
+  ]);
+
+  const accessibleProjects = projectSnap.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .filter((project) => canAccessProject("mentor", mentorId, project));
+
+  const groupIds = membershipSnap.docs.map((doc) => doc.data().groupId).filter(Boolean);
+  const groupDocs = await Promise.all(
+    [...new Set(groupIds)].map((groupId) => db().collection("mentorGroups").doc(groupId).get())
+  );
+  const accessibleGroups = groupDocs
+    .filter((doc) => doc.exists)
+    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .filter((group) => group.mentorId === mentorId);
+
+  return {
+    accessibleProjects,
+    accessibleGroups
+  };
 }
 
 async function loadUserProfilesByIds(userIds = []) {
@@ -72,6 +109,9 @@ router.post("/", authMiddleware, requireRole("entrepreneur"), async (req, res, n
       documents: [],
       feedback: [],
       recommendations: [],
+      mentorToolReviews: {},
+      privateLessons: [],
+      toolActivity: {},
       iterations: [],
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
@@ -116,6 +156,83 @@ router.get("/my", authMiddleware, async (req, res, next) => {
     });
 
     res.json({ projects: enrichedProjects });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/deletion-requests/my", authMiddleware, requireRole("mentor", "admin"), async (req, res, next) => {
+  try {
+    let query = db().collection("entrepreneurDeletionRequests");
+    if (req.userProfile.role === "mentor") {
+      query = query.where("mentorId", "==", req.user.uid);
+    }
+
+    const snap = await query.get();
+    const requests = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    res.json({ requests });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/entrepreneurs/:entrepreneurId/delete-request", authMiddleware, requireRole("mentor", "admin"), async (req, res, next) => {
+  try {
+    const entrepreneurId = req.params.entrepreneurId;
+    const reason = sanitizeText(req.body.reason);
+
+    if (!reason) {
+      const err = new Error("reason is required");
+      err.status = 400;
+      throw err;
+    }
+
+    const entrepreneurSnap = await db().collection("users").doc(entrepreneurId).get();
+    if (!entrepreneurSnap.exists) {
+      const err = new Error("Entrepreneur not found");
+      err.status = 404;
+      throw err;
+    }
+
+    const entrepreneur = entrepreneurSnap.data();
+    if (entrepreneur.role !== "entrepreneur") {
+      const err = new Error("Selected user is not an entrepreneur");
+      err.status = 400;
+      throw err;
+    }
+
+    let links = { accessibleProjects: [], accessibleGroups: [] };
+    if (req.userProfile.role === "mentor") {
+      links = await loadMentorEntrepreneurLinks(req.user.uid, entrepreneurId);
+      if (links.accessibleProjects.length === 0 && links.accessibleGroups.length === 0) {
+        const err = new Error("Forbidden");
+        err.status = 403;
+        throw err;
+      }
+    }
+
+    const requestId = `${req.user.uid}_${entrepreneurId}`;
+    const requestRef = db().collection("entrepreneurDeletionRequests").doc(requestId);
+
+    await requestRef.set({
+      entrepreneurId,
+      entrepreneurName: entrepreneur.name || "",
+      entrepreneurEmail: entrepreneur.email || "",
+      mentorId: req.user.uid,
+      mentorName: req.userProfile?.name || "",
+      reason,
+      status: "pending",
+      projectIds: links.accessibleProjects.map((project) => project.id),
+      groupIds: links.accessibleGroups.map((group) => group.id),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      reviewedAt: null,
+      reviewedBy: null,
+      decisionComment: ""
+    }, { merge: true });
+
+    const saved = (await requestRef.get()).data();
+    res.status(201).json({ request: { id: requestId, ...saved } });
   } catch (error) {
     next(error);
   }
@@ -186,6 +303,60 @@ router.put("/:projectId/forms", authMiddleware, requireRole("entrepreneur"), asy
   }
 });
 
+router.post("/:projectId/tool-activity", authMiddleware, requireRole("entrepreneur"), async (req, res, next) => {
+  try {
+    const {
+      toolKey,
+      sectionIndex = 0,
+      progressPercent,
+      answeredCount,
+      totalCount
+    } = req.body;
+    const normalizedToolKey = sanitizeText(toolKey);
+
+    if (!normalizedToolKey) {
+      const err = new Error("toolKey is required");
+      err.status = 400;
+      throw err;
+    }
+
+    const ref = db().collection("projects").doc(req.params.projectId);
+    const snap = await ref.get();
+
+    if (!snap.exists) {
+      const err = new Error("Project not found");
+      err.status = 404;
+      throw err;
+    }
+
+    const project = snap.data();
+    if (project.entrepreneurId !== req.user.uid) {
+      const err = new Error("Forbidden");
+      err.status = 403;
+      throw err;
+    }
+
+    const toolActivityUpdate = {
+      lastOpenedAt: new Date().toISOString(),
+      lastSectionIndex: Number.isFinite(Number(sectionIndex)) ? Number(sectionIndex) : 0,
+      openedBy: req.user.uid
+    };
+    if (Number.isFinite(Number(progressPercent))) toolActivityUpdate.progressPercent = Number(progressPercent);
+    if (Number.isFinite(Number(answeredCount))) toolActivityUpdate.answeredCount = Number(answeredCount);
+    if (Number.isFinite(Number(totalCount))) toolActivityUpdate.totalCount = Number(totalCount);
+
+    await ref.update({
+      [`toolActivity.${normalizedToolKey}`]: toolActivityUpdate,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    const updated = (await ref.get()).data();
+    res.json({ project: { id: req.params.projectId, ...updated } });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post("/:projectId/upload", authMiddleware, requireRole("entrepreneur"), upload.single("file"), async (req, res, next) => {
   try {
     if (!req.file) {
@@ -223,6 +394,61 @@ router.post("/:projectId/upload", authMiddleware, requireRole("entrepreneur"), u
     });
 
     res.status(201).json({ document });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/:projectId/private-lessons", authMiddleware, requireRole("mentor", "admin"), privateLessonUpload.single("file"), async (req, res, next) => {
+  try {
+    if (!req.file) {
+      const err = new Error("file is required");
+      err.status = 400;
+      throw err;
+    }
+
+    const ref = db().collection("projects").doc(req.params.projectId);
+    const snap = await ref.get();
+
+    if (!snap.exists) {
+      const err = new Error("Project not found");
+      err.status = 404;
+      throw err;
+    }
+
+    const project = snap.data();
+    if (!canAccessProject(req.userProfile.role, req.user.uid, project)) {
+      const err = new Error("Forbidden");
+      err.status = 403;
+      throw err;
+    }
+
+    const lesson = {
+      id: `${Date.now()}`,
+      title: sanitizeText(req.body.title) || req.file.originalname,
+      description: sanitizeText(req.body.description),
+      fileName: req.file.filename,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype || "",
+      path: `/uploads/private-lessons/${req.file.filename}`,
+      createdAt: new Date().toISOString(),
+      createdBy: req.user.uid
+    };
+
+    await ref.update({
+      privateLessons: [...(project.privateLessons || []), lesson],
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      iterations: [
+        ...(project.iterations || []),
+        {
+          action: "private_lesson_uploaded",
+          at: new Date().toISOString(),
+          by: req.user.uid
+        }
+      ]
+    });
+
+    res.status(201).json({ lesson });
   } catch (error) {
     next(error);
   }
@@ -323,6 +549,63 @@ router.post("/:projectId/validate", authMiddleware, requireRole("mentor", "admin
 
     const updated = (await ref.get()).data();
     res.json({ project: { id: req.params.projectId, ...updated } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/:projectId/tool-review", authMiddleware, requireRole("mentor", "admin"), async (req, res, next) => {
+  try {
+    const toolKey = sanitizeText(req.body.toolKey);
+    const recommendation = sanitizeText(req.body.recommendation);
+    const comment = sanitizeText(req.body.comment || recommendation);
+    const verified = req.body.verified !== false;
+
+    if (!toolKey) {
+      const err = new Error("toolKey is required");
+      err.status = 400;
+      throw err;
+    }
+
+    const ref = db().collection("projects").doc(req.params.projectId);
+    const snap = await ref.get();
+    if (!snap.exists) {
+      const err = new Error("Project not found");
+      err.status = 404;
+      throw err;
+    }
+
+    const project = snap.data();
+    if (!canAccessProject(req.userProfile.role, req.user.uid, project)) {
+      const err = new Error("Forbidden");
+      err.status = 403;
+      throw err;
+    }
+
+    const review = {
+      toolKey,
+      verified,
+      recommendation,
+      comment,
+      reviewedAt: new Date().toISOString(),
+      reviewedBy: req.user.uid
+    };
+
+    await ref.update({
+      [`mentorToolReviews.${toolKey}`]: review,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      iterations: [
+        ...(project.iterations || []),
+        {
+          action: verified ? `tool_verified_${toolKey}` : `tool_reviewed_${toolKey}`,
+          at: new Date().toISOString(),
+          by: req.user.uid
+        }
+      ]
+    });
+
+    const updated = (await ref.get()).data();
+    res.json({ project: { id: req.params.projectId, ...updated }, review });
   } catch (error) {
     next(error);
   }

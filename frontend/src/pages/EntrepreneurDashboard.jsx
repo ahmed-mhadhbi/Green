@@ -4,6 +4,10 @@ import dayjs from "dayjs";
 import { apiRequest } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { buildToolProgressList } from "../utils/toolProgress";
+import { TOOLS_CATALOG } from "../data/toolsCatalog";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000/api";
+const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
 
 const DEFAULT_FORMS = {
   valueProposition: "",
@@ -200,8 +204,13 @@ export default function EntrepreneurDashboard() {
                 <div key={`${item.group?.id || item.id}-lesson-${idx}`} className="module">
                   <p>{idx + 1}. {lesson.title}</p>
                   {lesson.content ? <p>{lesson.content}</p> : null}
-                  {lesson.videoUrl ? <a href={lesson.videoUrl} target="_blank" rel="noreferrer">Video</a> : null}
-                  {lesson.documentUrl ? <a href={lesson.documentUrl} target="_blank" rel="noreferrer">Download doc</a> : null}
+                  {lesson.videoUrl ? (
+                    <>
+                      <video className="mentor-private-video" controls src={resolveMediaUrl(lesson.videoUrl)}></video>
+                      <a href={resolveMediaUrl(lesson.videoUrl)} target="_blank" rel="noreferrer">Open video</a>
+                    </>
+                  ) : null}
+                  {lesson.documentUrl ? <a href={resolveMediaUrl(lesson.documentUrl)} target="_blank" rel="noreferrer">Download doc</a> : null}
                 </div>
               ))}
             </article>
@@ -254,6 +263,26 @@ export default function EntrepreneurDashboard() {
   );
 }
 
+function getProjectTool(project) {
+  return TOOLS_CATALOG.find((tool) => {
+    if (tool.key === "green-business-model") return project.type === "GREEN_BMC";
+    if (tool.key === "green-business-plan") return project.type === "GREEN_BUSINESS_PLAN";
+    return false;
+  }) || null;
+}
+
+function isVideoLesson(lesson) {
+  const target = `${lesson?.mimeType || ""} ${lesson?.path || ""}`.toLowerCase();
+  return target.includes("video") || [".mp4", ".webm", ".mov", ".m4v"].some((ext) => target.includes(ext));
+}
+
+function resolveMediaUrl(url) {
+  if (!url) return "";
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith("/")) return `${API_ORIGIN}${url}`;
+  return url;
+}
+
 function LearningProgressCard({ item, onSave }) {
   const [raw, setRaw] = useState((item.enrollment.modulesCompleted || []).join(","));
 
@@ -272,11 +301,18 @@ function LearningProgressCard({ item, onSave }) {
 
 function ProjectEditor({ project, onSave, onUpload }) {
   const [forms, setForms] = useState({ ...DEFAULT_FORMS, ...(project.forms || {}) });
+  const linkedTool = getProjectTool(project);
+  const mentorReview = linkedTool ? project.mentorToolReviews?.[linkedTool.key] || null : null;
 
   return (
     <article className="tile">
       <h3>{project.title}</h3>
       <p>Type: {project.type} | Stage: {project.stage} | Status: <strong>{project.status}</strong></p>
+      {mentorReview?.verified ? (
+        <p className="tool-verified-note">
+          Mentor verified this work on {dayjs(mentorReview.reviewedAt).format("DD MMM YYYY")}.
+        </p>
+      ) : null}
       <div className="form-stack">
         <textarea rows="2" placeholder="Value proposition" value={forms.valueProposition || ""} onChange={(e) => setForms({ ...forms, valueProposition: e.target.value })} />
         <textarea rows="2" placeholder="Customer segments" value={forms.customerSegments || ""} onChange={(e) => setForms({ ...forms, customerSegments: e.target.value })} />
@@ -295,6 +331,29 @@ function ProjectEditor({ project, onSave, onUpload }) {
       </div>
       {(project.feedback || []).length ? <p>Latest feedback: {(project.feedback || []).slice(-1)[0].detailedFeedback}</p> : null}
       {(project.recommendations || []).length ? <p>Latest recommendation: {(project.recommendations || []).slice(-1)[0].text}</p> : null}
+      {mentorReview?.recommendation || mentorReview?.comment ? (
+        <div className="mentor-comment-callout">
+          <strong>Mentor comment</strong>
+          <p>{mentorReview.recommendation || mentorReview.comment}</p>
+        </div>
+      ) : null}
+      {(project.privateLessons || []).length ? (
+        <div className="mentor-private-lessons">
+          <strong>Private lessons from mentor</strong>
+          {(project.privateLessons || []).map((lesson) => (
+            <div key={lesson.id} className="module mentor-private-lesson">
+              <p>{lesson.title}</p>
+              {lesson.description ? <p>{lesson.description}</p> : null}
+              {isVideoLesson(lesson) ? (
+                <video className="mentor-private-video" controls src={resolveMediaUrl(lesson.path)}></video>
+              ) : null}
+              <a href={resolveMediaUrl(lesson.path)} target="_blank" rel="noreferrer">
+                Open lesson file
+              </a>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </article>
   );
 }

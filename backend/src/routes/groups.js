@@ -1,9 +1,21 @@
+const fs = require("fs");
+const path = require("path");
 const express = require("express");
+const multer = require("multer");
 const { admin, db } = require("../config/firebase");
 const { authMiddleware } = require("../middleware/auth");
 const { requireRole } = require("../middleware/requireRole");
 
 const router = express.Router();
+const uploadDir = path.join(process.cwd(), "uploads", "group-lessons");
+fs.mkdirSync(uploadDir, { recursive: true });
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadDir),
+    filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname.replace(/\s+/g, "_")}`)
+  })
+});
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -33,7 +45,9 @@ function sanitizeLessons(lessons = []) {
       title: String(lesson?.title || "").trim(),
       content: String(lesson?.content || "").trim(),
       videoUrl: String(lesson?.videoUrl || "").trim(),
-      documentUrl: String(lesson?.documentUrl || "").trim()
+      documentUrl: String(lesson?.documentUrl || "").trim(),
+      mimeType: String(lesson?.mimeType || "").trim(),
+      uploadedAt: lesson?.uploadedAt || null
     }))
     .filter((lesson) => lesson.title);
 }
@@ -195,6 +209,51 @@ router.put("/:groupId", authMiddleware, requireRole("mentor", "admin"), async (r
     await ref.update(updates);
     const updated = (await ref.get()).data();
     res.json({ group: { id: ref.id, ...updated } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/:groupId/lessons/upload", authMiddleware, requireRole("mentor", "admin"), upload.single("file"), async (req, res, next) => {
+  try {
+    if (!req.file) {
+      const err = new Error("file is required");
+      err.status = 400;
+      throw err;
+    }
+
+    const ref = db().collection("mentorGroups").doc(req.params.groupId);
+    const snap = await ref.get();
+    if (!snap.exists) {
+      const err = new Error("Group not found");
+      err.status = 404;
+      throw err;
+    }
+
+    const existing = snap.data();
+    if (req.userProfile.role === "mentor" && existing.mentorId !== req.user.uid) {
+      const err = new Error("Mentor can only upload to own groups");
+      err.status = 403;
+      throw err;
+    }
+
+    const mediaPath = `/uploads/group-lessons/${req.file.filename}`;
+    const isVideo = String(req.file.mimetype || "").toLowerCase().startsWith("video/");
+    const lesson = {
+      title: String(req.body.title || req.file.originalname).trim(),
+      content: String(req.body.content || req.body.description || "").trim(),
+      videoUrl: isVideo ? mediaPath : "",
+      documentUrl: isVideo ? "" : mediaPath,
+      mimeType: req.file.mimetype || "",
+      uploadedAt: new Date().toISOString()
+    };
+
+    await ref.update({
+      lessons: [...(existing.lessons || []), lesson],
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    res.status(201).json({ lesson });
   } catch (error) {
     next(error);
   }

@@ -3638,11 +3638,191 @@ body {
   color: #166746;
 }
 
+.status-pill-pending {
+  background: #fff2dd;
+  color: #9c6500;
+}
+
+.status-pill-approved {
+  background: #dbf4e6;
+  color: #166746;
+}
+
+.status-pill-rejected {
+  background: #fde6e6;
+  color: #a12d2d;
+}
+
+.mentor-table-wrap table,
+.mentor-entrepreneur-table {
+  min-width: 100%;
+}
+
+.mentor-entrepreneur-table th {
+  white-space: nowrap;
+  background: #f4fbf6;
+}
+
+.mentor-entrepreneur-table td {
+  vertical-align: middle;
+}
+
+.mentor-entrepreneur-table td p {
+  margin: 0.2rem 0 0;
+}
+
+.mentor-table-row {
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.mentor-table-row:hover td {
+  background: #fbfffc;
+}
+
+.mentor-table-row-verified td {
+  background: linear-gradient(180deg, #f8fff9 0%, #eefbf0 100%);
+}
+
+.mentor-table-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.mentor-inline-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.45rem;
+  padding: 0.24rem 0.6rem;
+  border-radius: 999px;
+  background: #dbf4e6;
+  color: #166746;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.mentor-editor-card,
+.mentor-editor-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.mentor-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.mentor-editor-grid-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mentor-editor-grid-single {
+  grid-template-columns: 1fr;
+}
+
+.mentor-editor-panel {
+  border: 1px solid #d9e8df;
+  border-radius: 18px;
+  padding: 1rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fcfa 100%);
+}
+
+.tool-form-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.tool-verified-note {
+  color: #166746;
+  font-weight: 700;
+}
+
+.mentor-review-popup {
+  display: grid;
+  gap: 0.8rem;
+  border: 1px solid #b6e0c2;
+  border-radius: 18px;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at top right, #dff6e6 0%, transparent 35%),
+    linear-gradient(135deg, #f7fff9 0%, #effaf2 100%);
+}
+
+.mentor-review-popup p {
+  margin: 0;
+}
+
+.mentor-review-popup-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.mentor-review-popup-head strong,
+.mentor-review-popup-head span {
+  display: block;
+}
+
+.mentor-review-popup-head span {
+  color: #4b665c;
+  font-size: 0.82rem;
+  margin-top: 0.2rem;
+}
+
+.mentor-comment-callout {
+  border: 1px solid #b6e0c2;
+  border-radius: 16px;
+  padding: 0.9rem;
+  background: #f6fff8;
+}
+
+.mentor-comment-callout strong,
+.mentor-private-lessons strong {
+  display: block;
+  margin-bottom: 0.55rem;
+}
+
+.mentor-private-lessons {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.mentor-private-lesson {
+  border: 1px solid #d9e8df;
+  border-radius: 14px;
+  padding: 0.75rem;
+  background: #fbfffc;
+}
+
+.mentor-private-video {
+  width: 100%;
+  margin: 0.45rem 0;
+  border-radius: 12px;
+  background: #12221a;
+}
+
 @media (max-width: 960px) {
   .tools-browser-shell,
   .mentor-tools-stats,
   .mentor-improvement-grid,
   .mentor-group-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mentor-editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mentor-editor-grid-two,
+  .mentor-editor-grid-single {
     grid-template-columns: 1fr;
   }
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { jsPDF } from "jspdf";
 import { Link, useParams, useSearchParams } from "react-router-dom";
@@ -261,6 +261,7 @@ export default function ToolQuestionnairePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { token, profile, firebaseUser } = useAuth();
   const tool = getToolByKey(toolKey);
+  const reviewProjectId = searchParams.get("projectId");
   const [projects, setProjects] = useState([]);
   const [answers, setAnswers] = useState({});
   const [source, setSource] = useState("local");
@@ -271,7 +272,10 @@ export default function ToolQuestionnairePage() {
   const [stakeholderRows, setStakeholderRows] = useState(1);
   const [vpRows, setVpRows] = useState(1);
   const [openSidebarStepId, setOpenSidebarStepId] = useState(null);
+  const [showReviewNotice, setShowReviewNotice] = useState(true);
+  const lastSyncedAnswersRef = useRef("");
   const isGbm = tool?.key === GBM_KEY;
+  const isReviewMode = profile?.role !== "entrepreneur" && Boolean(reviewProjectId);
 
   useEffect(() => {
     async function load() {
@@ -285,22 +289,42 @@ export default function ToolQuestionnairePage() {
           setAnswers(resolved.answers);
           setSource(resolved.source);
           setProjectId(resolved.project?.id || null);
+          lastSyncedAnswersRef.current = JSON.stringify(resolved.answers || {});
           return;
         } catch (err) {
           setMessage(err.message);
         }
       }
+
+      if (token && isReviewMode) {
+        try {
+          const res = await apiRequest(`/projects/${reviewProjectId}`, { token });
+          const reviewProject = res.project;
+          const resolved = resolveAnswersForTool({ uid: firebaseUser?.uid, toolKey, projects: [reviewProject] });
+          setProjects([reviewProject]);
+          setAnswers(resolved.answers);
+          setSource("mentor-review");
+          setProjectId(reviewProject.id);
+          lastSyncedAnswersRef.current = JSON.stringify(resolved.answers || {});
+          return;
+        } catch (err) {
+          setMessage(err.message);
+        }
+      }
+
       const resolved = resolveAnswersForTool({ uid: firebaseUser?.uid, toolKey, projects: [] });
       setAnswers(resolved.answers);
       setSource("local");
       setProjectId(null);
+      lastSyncedAnswersRef.current = JSON.stringify(resolved.answers || {});
     }
     load();
-  }, [firebaseUser?.uid, profile?.role, token, tool, toolKey]);
+  }, [firebaseUser?.uid, isReviewMode, profile?.role, reviewProjectId, token, tool, toolKey]);
 
   useEffect(() => {
     setMessage("");
-  }, [toolKey]);
+    setShowReviewNotice(true);
+  }, [reviewProjectId, toolKey]);
 
   useEffect(() => {
     if (!isGbm) return;
@@ -397,12 +421,27 @@ export default function ToolQuestionnairePage() {
 
   const currentSection = sectionSummaries[p] || null;
   const currentStepGroup = stepGroups.find((group) => group.hasCurrent) || stepGroups[0] || null;
-  const canNext = currentSection ? currentSection.isComplete : false;
+  const activeProject = useMemo(() => projects.find((project) => project.id === projectId) || null, [projectId, projects]);
+  const currentToolReview = activeProject?.mentorToolReviews?.[tool.key] || null;
+  const canNext = isReviewMode || (currentSection ? currentSection.isComplete : false);
 
   useEffect(() => {
     if (!currentStepGroup?.id) return;
     setOpenSidebarStepId(currentStepGroup.id);
   }, [currentStepGroup?.id]);
+
+  useEffect(() => {
+    if (!token || profile?.role !== "entrepreneur" || !projectId || !tool?.key) return;
+
+    apiRequest(`/projects/${projectId}/tool-activity`, {
+      method: "POST",
+      token,
+      body: {
+        toolKey: tool.key,
+        sectionIndex: p
+      }
+    }).catch(() => {});
+  }, [p, profile?.role, projectId, token, tool?.key]);
 
   if (!tool) {
     return (
@@ -428,6 +467,72 @@ export default function ToolQuestionnairePage() {
   const persisted = isGbm
     ? { ...answers, __cards: cards, __stages: stages, __stakeholderRows: stakeholderRows, __vpRows: vpRows }
     : answers;
+  const persistedSignature = useMemo(() => JSON.stringify(persisted), [persisted]);
+
+  useEffect(() => {
+    if (profile?.role !== "entrepreneur" || !token || !projectId || !tool) return;
+    if (persistedSignature === lastSyncedAnswersRef.current) return;
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const current = projects.find((x) => x.id === projectId);
+        await apiRequest(`/projects/${projectId}/forms`, {
+          method: "PUT",
+          token,
+          body: { forms: { ...(current?.forms || {}), ...persisted }, submit: false }
+        });
+        await apiRequest(`/projects/${projectId}/tool-activity`, {
+          method: "POST",
+          token,
+          body: {
+            toolKey: tool.key,
+            sectionIndex: p,
+            progressPercent: progress.percent,
+            answeredCount: progress.answeredCount,
+            totalCount: progress.totalCount
+          }
+        });
+
+        lastSyncedAnswersRef.current = persistedSignature;
+        setSource("project");
+        setProjects((prev) => prev.map((project) => (
+          project.id === projectId
+            ? {
+              ...project,
+              forms: { ...(project.forms || {}), ...persisted },
+              toolActivity: {
+                ...(project.toolActivity || {}),
+                [tool.key]: {
+                  ...(project.toolActivity?.[tool.key] || {}),
+                  lastOpenedAt: new Date().toISOString(),
+                  lastSectionIndex: p,
+                  progressPercent: progress.percent,
+                  answeredCount: progress.answeredCount,
+                  totalCount: progress.totalCount
+                }
+              }
+            }
+            : project
+        )));
+      } catch {
+        // Keep manual save as a fallback when background syncing fails.
+      }
+    }, 900);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    p,
+    persisted,
+    persistedSignature,
+    profile?.role,
+    progress.answeredCount,
+    progress.percent,
+    progress.totalCount,
+    projectId,
+    projects,
+    token,
+    tool
+  ]);
 
   async function saveAnswers() {
     try {
@@ -439,6 +544,18 @@ export default function ToolQuestionnairePage() {
           token,
           body: { forms: { ...(current?.forms || {}), ...persisted }, submit: false }
         });
+        await apiRequest(`/projects/${projectId}/tool-activity`, {
+          method: "POST",
+          token,
+          body: {
+            toolKey: tool.key,
+            sectionIndex: p,
+            progressPercent: progress.percent,
+            answeredCount: progress.answeredCount,
+            totalCount: progress.totalCount
+          }
+        });
+        lastSyncedAnswersRef.current = persistedSignature;
         setSource("project");
         setMessage("Saved to your project workspace.");
         return;
@@ -1017,12 +1134,32 @@ export default function ToolQuestionnairePage() {
           <p className="tool-progress">Progress: <strong>{progress.percent}%</strong> ({progress.answeredCount}/{progress.totalCount})</p>
           {currentSection ? <p className="subtitle">Step {p + 1}/{sectionSummaries.length}: {currentSection.title}</p> : null}
           <p className="subtitle">Status: {progress.status}</p>
-          <p className="subtitle">Data source: {source === "project" ? "Project workspace" : "Local draft"}</p>
+          <p className="subtitle">
+            Data source: {source === "project" ? "Project workspace" : source === "mentor-review" ? "Mentor review view" : "Local draft"}
+          </p>
+          {currentToolReview?.verified ? (
+            <p className="subtitle tool-verified-note">Mentor verified this tool on {dayjs(currentToolReview.reviewedAt).format("DD MMM YYYY")}.</p>
+          ) : null}
           {message ? <p className="info tool-info">{message}</p> : null}
         </section>
 
         <section className="card form-stack">
-          {isGbm ? renderGbmPage() : renderGenericSection()}
+          {currentToolReview && showReviewNotice ? (
+            <div className="mentor-review-popup visible">
+              <div className="mentor-review-popup-head">
+                <div>
+                  <strong>Mentor comment</strong>
+                  <span>{currentToolReview.verified ? "Verified" : "Review available"}</span>
+                </div>
+                <button type="button" className="btn" onClick={() => setShowReviewNotice(false)}>Close</button>
+              </div>
+              <p>{currentToolReview.recommendation || currentToolReview.comment || "Your mentor reviewed this tool."}</p>
+            </div>
+          ) : null}
+
+          <fieldset disabled={isReviewMode} className="tool-form-fieldset">
+            {isGbm ? renderGbmPage() : renderGenericSection()}
+          </fieldset>
 
           <div className="tool-footer">
             <div className="inline">
@@ -1033,7 +1170,7 @@ export default function ToolQuestionnairePage() {
               <p className="question-description">Fill all questions in this section to unlock the next step.</p>
             ) : null}
             <div className="inline">
-              <button className="btn primary" onClick={saveAnswers}>Save answers</button>
+              {!isReviewMode ? <button className="btn primary" onClick={saveAnswers}>Save answers</button> : null}
               <button className="btn" onClick={downloadAnswersPdf}>Download PDF</button>
               {tool.key === GBM_KEY ? <button className="btn" onClick={downloadGbmJson}>Download GBM JSON</button> : null}
               <Link to="/app/tools" className="btn">Back to tools</Link>

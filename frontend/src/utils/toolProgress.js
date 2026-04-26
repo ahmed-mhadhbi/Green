@@ -211,6 +211,10 @@ export function getToolProjectType(toolKey) {
   return TOOL_PROJECT_TYPE[toolKey] || null;
 }
 
+export function getToolForProjectType(projectType) {
+  return TOOLS_CATALOG.find((tool) => getToolProjectType(tool.key) === projectType) || null;
+}
+
 export function countAnsweredQuestions(tool, answers = {}) {
   const questionIds = getQuestionIdsForTool(tool?.key, tool, answers);
   return questionIds.reduce((count, questionId) => count + (hasValue(answers[questionId]) ? 1 : 0), 0);

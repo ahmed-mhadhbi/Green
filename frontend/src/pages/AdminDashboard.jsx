@@ -8,20 +8,23 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [courses, setCourses] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [deletionRequests, setDeletionRequests] = useState([]);
   const [message, setMessage] = useState("");
 
   async function loadAll() {
-    const [overviewRes, usersRes, coursesRes, projectsRes] = await Promise.all([
+    const [overviewRes, usersRes, coursesRes, projectsRes, deletionRequestsRes] = await Promise.all([
       apiRequest("/admin/overview", { token }),
       apiRequest("/admin/users", { token }),
       apiRequest("/admin/courses", { token }),
-      apiRequest("/admin/projects", { token })
+      apiRequest("/admin/projects", { token }),
+      apiRequest("/admin/deletion-requests", { token })
     ]);
 
     setOverview(overviewRes.totals);
     setUsers(usersRes.users || []);
     setCourses(coursesRes.courses || []);
     setProjects(projectsRes.projects || []);
+    setDeletionRequests(deletionRequestsRes.requests || []);
   }
 
   useEffect(() => {
@@ -36,6 +39,16 @@ export default function AdminDashboard() {
       body: { role }
     });
     setMessage("Role updated.");
+    await loadAll();
+  }
+
+  async function reviewDeletionRequest(requestId, status) {
+    await apiRequest(`/admin/deletion-requests/${requestId}`, {
+      method: "PATCH",
+      token,
+      body: { status }
+    });
+    setMessage(`Deletion request ${status}.`);
     await loadAll();
   }
 
@@ -84,6 +97,57 @@ export default function AdminDashboard() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section className="card span-2">
+        <h2>Entrepreneur deletion approvals</h2>
+        {deletionRequests.length === 0 ? <p>No deletion requests.</p> : null}
+        {deletionRequests.length > 0 ? (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Entrepreneur</th>
+                  <th>Mentor</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {deletionRequests.map((request) => (
+                  <tr key={request.id}>
+                    <td>
+                      <strong>{request.entrepreneurName || request.entrepreneurId}</strong>
+                      <p>{request.entrepreneurEmail || "-"}</p>
+                    </td>
+                    <td>{request.mentorName || request.mentorId}</td>
+                    <td>{request.reason || "-"}</td>
+                    <td>{request.status || "pending"}</td>
+                    <td>
+                      <div className="inline">
+                        <button
+                          className="btn primary"
+                          onClick={() => reviewDeletionRequest(request.id, "approved")}
+                          disabled={request.status === "approved"}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          className="btn"
+                          onClick={() => reviewDeletionRequest(request.id, "rejected")}
+                          disabled={request.status === "rejected"}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
       </section>
 
       <section className="card">

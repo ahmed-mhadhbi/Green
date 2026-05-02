@@ -1,7 +1,7 @@
 import { TOOLS_CATALOG, getToolByKey } from "../data/toolsCatalog";
 
 const TOOL_PROJECT_TYPE = {
-  "green-business-model": "GREEN_BMC",
+  "green-business-model": ["GREEN_BMC", "BMC"],
   "green-business-plan": "GREEN_BUSINESS_PLAN"
 };
 
@@ -198,9 +198,32 @@ function getGbmQuestionIds(answers = {}) {
   ];
 }
 
-function getQuestionIdsForTool(toolKey, tool, answers = {}) {
-  if (toolKey === GBM_KEY) return getGbmQuestionIds(answers);
+function getQuestionIdsForTool(toolKey, tool, answers = {}, projectType = null) {
+  if (toolKey === GBM_KEY && projectType !== "BMC") return getGbmQuestionIds(answers);
   return (tool?.questions || []).map((question) => question.id);
+}
+
+function hasReviewStatus(review) {
+  return review?.status === "yes" || review?.status === "no";
+}
+
+export function calculateReviewProgressForQuestionIds(questionIds = [], answerReviews = {}) {
+  const totalCount = questionIds.length;
+  const reviewedIds = questionIds.filter((questionId) => hasReviewStatus(answerReviews?.[questionId]));
+  const yesCount = reviewedIds.reduce((count, questionId) => (
+    count + (answerReviews?.[questionId]?.status === "yes" ? 1 : 0)
+  ), 0);
+  const noCount = reviewedIds.reduce((count, questionId) => (
+    count + (answerReviews?.[questionId]?.status === "no" ? 1 : 0)
+  ), 0);
+  const reviewedCount = reviewedIds.length;
+  const percent = totalCount === 0 ? 0 : Math.round((reviewedCount / totalCount) * 100);
+
+  let status = "Not reviewed";
+  if (reviewedCount > 0 && reviewedCount < totalCount) status = "Review in progress";
+  if (totalCount > 0 && reviewedCount === totalCount) status = "Review completed";
+
+  return { totalCount, reviewedCount, yesCount, noCount, percent, status };
 }
 
 export function getToolStorageKey(uid, toolKey) {
@@ -208,11 +231,18 @@ export function getToolStorageKey(uid, toolKey) {
 }
 
 export function getToolProjectType(toolKey) {
-  return TOOL_PROJECT_TYPE[toolKey] || null;
+  const projectTypes = TOOL_PROJECT_TYPE[toolKey];
+  return Array.isArray(projectTypes) ? projectTypes[0] : projectTypes || null;
+}
+
+export function getToolProjectTypes(toolKey) {
+  const projectTypes = TOOL_PROJECT_TYPE[toolKey];
+  if (!projectTypes) return [];
+  return Array.isArray(projectTypes) ? projectTypes : [projectTypes];
 }
 
 export function getToolForProjectType(projectType) {
-  return TOOLS_CATALOG.find((tool) => getToolProjectType(tool.key) === projectType) || null;
+  return TOOLS_CATALOG.find((tool) => getToolProjectTypes(tool.key).includes(projectType)) || null;
 }
 
 export function countAnsweredQuestions(tool, answers = {}) {
@@ -220,10 +250,10 @@ export function countAnsweredQuestions(tool, answers = {}) {
   return questionIds.reduce((count, questionId) => count + (hasValue(answers[questionId]) ? 1 : 0), 0);
 }
 
-export function calculateToolProgress(tool, answers = {}) {
-  const questionIds = getQuestionIdsForTool(tool?.key, tool, answers);
+export function calculateToolProgress(tool, answers = {}, options = {}) {
+  const questionIds = getQuestionIdsForTool(tool?.key, tool, answers, options.projectType);
   const totalCount = questionIds.length;
-  const answeredCount = countAnsweredQuestions(tool, answers);
+  const answeredCount = questionIds.reduce((count, questionId) => count + (hasValue(answers[questionId]) ? 1 : 0), 0);
   const percent = totalCount === 0 ? 0 : Math.round((answeredCount / totalCount) * 100);
 
   let status = "Not started";
@@ -231,6 +261,11 @@ export function calculateToolProgress(tool, answers = {}) {
   if (percent === 100) status = "Completed";
 
   return { totalCount, answeredCount, percent, status };
+}
+
+export function calculateMentorReviewProgress(tool, answers = {}, mentorReview = {}, options = {}) {
+  const questionIds = getQuestionIdsForTool(tool?.key, tool, answers, options.projectType);
+  return calculateReviewProgressForQuestionIds(questionIds, mentorReview?.answerReviews || {});
 }
 
 export function readLocalToolAnswers(uid, toolKey) {
@@ -247,9 +282,9 @@ export function saveLocalToolAnswers(uid, toolKey, answers) {
 }
 
 function findProjectForTool(toolKey, projects = []) {
-  const projectType = getToolProjectType(toolKey);
-  if (!projectType) return null;
-  return projects.find((project) => project.type === projectType) || null;
+  const projectTypes = getToolProjectTypes(toolKey);
+  if (!projectTypes.length) return null;
+  return projects.find((project) => projectTypes.includes(project.type)) || null;
 }
 
 export function resolveAnswersForTool({ uid, toolKey, projects = [] }) {
@@ -260,12 +295,12 @@ export function resolveAnswersForTool({ uid, toolKey, projects = [] }) {
   if (project) {
     const forms = project.forms || {};
     const projectAnswers = {};
-    getQuestionIdsForTool(toolKey, tool, forms).forEach((questionId) => {
+    getQuestionIdsForTool(toolKey, tool, forms, project.type).forEach((questionId) => {
       if (forms[questionId] !== undefined) {
         projectAnswers[questionId] = forms[questionId];
       }
     });
-    if (toolKey === GBM_KEY) {
+    if (toolKey === GBM_KEY && project.type !== "BMC") {
       ["__cards", "__stages", "__stakeholderRows", "__vpRows"].forEach((metaKey) => {
         if (forms[metaKey] !== undefined) {
           projectAnswers[metaKey] = forms[metaKey];
@@ -285,20 +320,26 @@ export function resolveAnswersForTool({ uid, toolKey, projects = [] }) {
 export function buildToolProgressList({ uid, projects = [] }) {
   return TOOLS_CATALOG.map((tool) => {
     const { answers, project } = resolveAnswersForTool({ uid, toolKey: tool.key, projects });
-    const progress = calculateToolProgress(tool, answers);
+    const answerProgress = calculateToolProgress(tool, answers, { projectType: project?.type });
     const mentorReview = project?.mentorToolReviews?.[tool.key] || null;
-    const reviewedPercent = Number.isFinite(Number(mentorReview?.progressPercent))
-      ? Number(mentorReview.progressPercent)
-      : progress.percent;
+    const reviewProgress = calculateMentorReviewProgress(tool, answers, mentorReview, { projectType: project?.type });
 
     return {
       toolKey: tool.key,
       title: tool.title,
       project,
       mentorReview,
-      hasMentorCorrection: Boolean(mentorReview?.reviewedAt),
-      reviewedPercent,
-      ...progress
+      hasMentorCorrection: reviewProgress.reviewedCount > 0,
+      reviewedPercent: reviewProgress.percent,
+      reviewedCount: reviewProgress.reviewedCount,
+      yesCount: reviewProgress.yesCount,
+      noCount: reviewProgress.noCount,
+      answerPercent: answerProgress.percent,
+      answerStatus: answerProgress.status,
+      answeredCount: answerProgress.answeredCount,
+      totalCount: answerProgress.totalCount,
+      percent: reviewProgress.percent,
+      status: reviewProgress.status
     };
   });
 }

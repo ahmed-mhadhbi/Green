@@ -60,7 +60,7 @@ export default function EntrepreneurDashboard() {
   }, [firebaseUser?.uid, projects]);
 
   const usedTools = useMemo(() => {
-    return toolProgress.filter((tool) => tool.percent > 0);
+    return toolProgress.filter((tool) => tool.answerPercent > 0 || tool.percent > 0);
   }, [toolProgress]);
 
   async function enroll(courseId) {
@@ -158,6 +158,7 @@ export default function EntrepreneurDashboard() {
               <div>
                 <h3>{tool.title}</h3>
                 <p>{getVisibleProgressLabel(tool)}</p>
+                <p className="subtitle">{tool.answeredCount}/{tool.totalCount} answers filled</p>
                 {tool.hasMentorCorrection ? (
                   <span className={`correction-badge correction-badge-${getCorrectionStatus(tool.mentorReview)}`}>
                     {getCorrectionLabel(tool.mentorReview)}
@@ -273,7 +274,7 @@ export default function EntrepreneurDashboard() {
 
 function getProjectTool(project) {
   return TOOLS_CATALOG.find((tool) => {
-    if (tool.key === "green-business-model") return project.type === "GREEN_BMC";
+    if (tool.key === "green-business-model") return ["GREEN_BMC", "BMC"].includes(project.type);
     if (tool.key === "green-business-plan") return project.type === "GREEN_BUSINESS_PLAN";
     return false;
   }) || null;
@@ -304,8 +305,8 @@ function getCorrectionLabel(review) {
 }
 
 function getVisibleProgressLabel(tool) {
-  if (!tool?.hasMentorCorrection) return "Pending mentor correction";
-  return `${tool.reviewedPercent}% - ${tool.status}`;
+  if (!tool) return "0% mentor reviewed";
+  return `${tool.reviewedPercent || 0}% mentor reviewed - ${tool.status || "Not reviewed"}`;
 }
 
 function LearningProgressCard({ item, onSave }) {

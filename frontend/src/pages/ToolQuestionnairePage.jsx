@@ -7,7 +7,13 @@ import { useAuth } from "../context/AuthContext";
 import { GBM_NAVIGATION_SECTIONS, getToolStepGroups } from "../data/toolNavigation";
 import { getToolByKey } from "../data/toolsCatalog";
 import { getToolSections } from "../data/toolSections";
-import { calculateToolProgress, getToolProjectType, resolveAnswersForTool, saveLocalToolAnswers } from "../utils/toolProgress";
+import {
+  calculateReviewProgressForQuestionIds,
+  calculateToolProgress,
+  getToolProjectType,
+  resolveAnswersForTool,
+  saveLocalToolAnswers
+} from "../utils/toolProgress";
 
 const GBM_KEY = "green-business-model";
 const GBM_PAGES = [
@@ -244,6 +250,13 @@ function getCorrectionLabel(review) {
   return "Pending";
 }
 
+function formatAnswerPreview(value) {
+  if (!hasAnswer(value)) return EMPTY_ANSWER;
+  if (Array.isArray(value)) return value.join(", ");
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
 function buildQs(page, cards, stages, stakeholderRows, vpRows) {
   if (!page) return [];
   if (page.n === 8) {
@@ -285,10 +298,10 @@ export default function ToolQuestionnairePage() {
   const [vpRows, setVpRows] = useState(1);
   const [openSidebarStepId, setOpenSidebarStepId] = useState(null);
   const [showReviewNotice, setShowReviewNotice] = useState(true);
-  const [mentorDecision, setMentorDecision] = useState("yes");
-  const [mentorComment, setMentorComment] = useState("");
+  const [answerReviews, setAnswerReviews] = useState({});
   const lastSyncedAnswersRef = useRef("");
-  const isGbm = tool?.key === GBM_KEY;
+  const activeProject = useMemo(() => projects.find((project) => project.id === projectId) || null, [projectId, projects]);
+  const isGbm = tool?.key === GBM_KEY && activeProject?.type !== "BMC";
   const isReviewMode = profile?.role !== "entrepreneur" && Boolean(reviewProjectId);
 
   useEffect(() => {
@@ -373,7 +386,7 @@ export default function ToolQuestionnairePage() {
 
   const progress = useMemo(() => {
     if (!tool) return { answeredCount: 0, totalCount: 0, percent: 0, status: "Not started" };
-    if (!isGbm) return calculateToolProgress(tool, answers);
+    if (!isGbm) return calculateToolProgress(tool, answers, { projectType: activeProject?.type });
     const totalCount = allGbmQs.length;
     const answeredCount = allGbmQs.reduce((count, question) => count + (hasAnswer(answers[question.id]) ? 1 : 0), 0);
 
@@ -387,13 +400,17 @@ export default function ToolQuestionnairePage() {
       percent: totalCount ? Math.round((answeredCount / totalCount) * 100) : 0,
       status
     };
-  }, [allGbmQs, answers, isGbm, tool]);
+  }, [activeProject?.type, allGbmQs, answers, isGbm, tool]);
+
+  const currentToolReview = activeProject?.mentorToolReviews?.[tool?.key] || null;
+  const visibleAnswerReviews = isReviewMode ? answerReviews : (currentToolReview?.answerReviews || {});
 
   const sectionSummaries = useMemo(() => {
     return toolSections.map((section, index) => {
       const questionIds = isGbm ? section.questionIds : section.questionIds.filter((questionId) => questionMap.has(questionId));
       const totalCount = questionIds.length;
       const answeredCount = questionIds.reduce((count, questionId) => count + (hasAnswer(answers[questionId]) ? 1 : 0), 0);
+      const sectionReviewProgress = calculateReviewProgressForQuestionIds(questionIds, visibleAnswerReviews);
 
       return {
         ...section,
@@ -401,10 +418,22 @@ export default function ToolQuestionnairePage() {
         questionIds,
         totalCount,
         answeredCount,
-        isComplete: totalCount === 0 || answeredCount === totalCount
+        reviewedCount: sectionReviewProgress.reviewedCount,
+        yesCount: sectionReviewProgress.yesCount,
+        noCount: sectionReviewProgress.noCount,
+        isComplete: totalCount === 0 || answeredCount === totalCount,
+        isReviewed: totalCount === 0 || sectionReviewProgress.reviewedCount === totalCount
       };
     });
-  }, [answers, isGbm, questionMap, toolSections]);
+  }, [answers, isGbm, questionMap, toolSections, visibleAnswerReviews]);
+
+  const allReviewQuestionIds = useMemo(() => (
+    sectionSummaries.flatMap((section) => section.questionIds)
+  ), [sectionSummaries]);
+
+  const reviewProgress = useMemo(() => (
+    calculateReviewProgressForQuestionIds(allReviewQuestionIds, visibleAnswerReviews)
+  ), [allReviewQuestionIds, visibleAnswerReviews]);
 
   const stepGroups = useMemo(() => {
     if (!tool) return [];
@@ -420,13 +449,16 @@ export default function ToolQuestionnairePage() {
 
         const totalCount = items.reduce((count, item) => count + item.totalCount, 0);
         const answeredCount = items.reduce((count, item) => count + item.answeredCount, 0);
+        const reviewedCount = items.reduce((count, item) => count + item.reviewedCount, 0);
 
         return {
           ...group,
           items,
           totalCount,
           answeredCount,
+          reviewedCount,
           isComplete: items.length > 0 && items.every((item) => item.isComplete),
+          isReviewed: items.length > 0 && items.every((item) => item.isReviewed),
           hasCurrent: items.some((item) => item.index === p)
         };
       })
@@ -435,20 +467,25 @@ export default function ToolQuestionnairePage() {
 
   const currentSection = sectionSummaries[p] || null;
   const currentStepGroup = stepGroups.find((group) => group.hasCurrent) || stepGroups[0] || null;
-  const activeProject = useMemo(() => projects.find((project) => project.id === projectId) || null, [projectId, projects]);
-  const currentToolReview = activeProject?.mentorToolReviews?.[tool?.key] || null;
+  const currentReviewQuestions = useMemo(() => {
+    if (!currentSection) return [];
+    if (isGbm) return pageQs;
+
+    return currentSection.questionIds
+      .map((questionId) => questionMap.get(questionId))
+      .filter(Boolean)
+      .map((question) => ({
+        id: question.id,
+        label: question.label
+      }));
+  }, [currentSection, isGbm, pageQs, questionMap]);
   const currentCorrectionStatus = getCorrectionStatus(currentToolReview);
-  const visibleProgressPercent = Number.isFinite(Number(currentToolReview?.progressPercent))
-    ? Number(currentToolReview.progressPercent)
-    : progress.percent;
-  const canShowMentorProgress = Boolean(currentCorrectionStatus);
   const canNext = isReviewMode || (currentSection ? currentSection.isComplete : false);
 
   useEffect(() => {
     if (!isReviewMode) return;
-    setMentorDecision(getCorrectionStatus(currentToolReview) === "no" ? "no" : "yes");
-    setMentorComment(currentToolReview?.comment || currentToolReview?.recommendation || "");
-  }, [currentToolReview?.reviewedAt, currentToolReview?.comment, currentToolReview?.recommendation, isReviewMode]);
+    setAnswerReviews(currentToolReview?.answerReviews || {});
+  }, [currentToolReview?.answerReviews, currentToolReview?.reviewedAt, isReviewMode]);
 
   useEffect(() => {
     if (!currentStepGroup?.id) return;
@@ -512,7 +549,6 @@ export default function ToolQuestionnairePage() {
           body: {
             toolKey: tool.key,
             sectionIndex: p,
-            progressPercent: progress.percent,
             answeredCount: progress.answeredCount,
             totalCount: progress.totalCount
           }
@@ -531,7 +567,6 @@ export default function ToolQuestionnairePage() {
                   ...(project.toolActivity?.[tool.key] || {}),
                   lastOpenedAt: new Date().toISOString(),
                   lastSectionIndex: p,
-                  progressPercent: progress.percent,
                   answeredCount: progress.answeredCount,
                   totalCount: progress.totalCount
                 }
@@ -551,7 +586,6 @@ export default function ToolQuestionnairePage() {
     persistedSignature,
     profile?.role,
     progress.answeredCount,
-    progress.percent,
     progress.totalCount,
     projectId,
     projects,
@@ -575,7 +609,6 @@ export default function ToolQuestionnairePage() {
           body: {
             toolKey: tool.key,
             sectionIndex: p,
-            progressPercent: progress.percent,
             answeredCount: progress.answeredCount,
             totalCount: progress.totalCount
           }
@@ -593,9 +626,75 @@ export default function ToolQuestionnairePage() {
     }
   }
 
+  function setAnswerReviewStatus(questionId, status) {
+    setAnswerReviews((current) => ({
+      ...current,
+      [questionId]: {
+        ...(current[questionId] || {}),
+        status
+      }
+    }));
+  }
+
+  function setAnswerReviewComment(questionId, comment) {
+    setAnswerReviews((current) => ({
+      ...current,
+      [questionId]: {
+        ...(current[questionId] || {}),
+        comment
+      }
+    }));
+  }
+
+  function markCurrentSectionYes() {
+    setAnswerReviews((current) => {
+      const next = { ...current };
+      currentReviewQuestions.forEach((question) => {
+        next[question.id] = {
+          ...(next[question.id] || {}),
+          status: "yes",
+          comment: next[question.id]?.comment || ""
+        };
+      });
+      return next;
+    });
+  }
+
   async function submitMentorCorrection(event) {
     event.preventDefault();
     if (!isReviewMode || !projectId || !tool?.key) return;
+
+    const sectionAnswerReviews = currentReviewQuestions.reduce((acc, question) => {
+      const review = answerReviews[question.id] || {};
+      if (review.status) {
+        acc[question.id] = {
+          status: review.status,
+          comment: review.comment || ""
+        };
+      }
+      return acc;
+    }, {});
+    const missingStatus = currentReviewQuestions.find((question) => !sectionAnswerReviews[question.id]?.status);
+    const missingNoComment = currentReviewQuestions.find((question) => (
+      sectionAnswerReviews[question.id]?.status === "no" && !String(sectionAnswerReviews[question.id]?.comment || "").trim()
+    ));
+
+    if (missingStatus) {
+      setMessage(`Choose Yes or No for "${missingStatus.label}" before saving.`);
+      return;
+    }
+
+    if (missingNoComment) {
+      setMessage(`Add a short "why no" comment for "${missingNoComment.label}".`);
+      return;
+    }
+
+    const mergedReviews = {
+      ...(currentToolReview?.answerReviews || {}),
+      ...sectionAnswerReviews
+    };
+    const nextReviewProgress = calculateReviewProgressForQuestionIds(allReviewQuestionIds, mergedReviews);
+    const hasNo = Object.values(mergedReviews).some((review) => review?.status === "no");
 
     try {
       const res = await apiRequest(`/projects/${projectId}/tool-review`, {
@@ -603,11 +702,11 @@ export default function ToolQuestionnairePage() {
         token,
         body: {
           toolKey: tool.key,
-          corrected: mentorDecision === "yes",
-          verified: mentorDecision === "yes",
-          recommendation: mentorComment,
-          comment: mentorComment,
-          progressPercent: progress.percent,
+          corrected: !hasNo,
+          verified: !hasNo,
+          answerReviews: sectionAnswerReviews,
+          progressPercent: nextReviewProgress.percent,
+          reviewedCount: nextReviewProgress.reviewedCount,
           answeredCount: progress.answeredCount,
           totalCount: progress.totalCount
         }
@@ -616,7 +715,7 @@ export default function ToolQuestionnairePage() {
       setProjects((prev) => prev.map((project) => (
         project.id === projectId ? res.project : project
       )));
-      setMessage(mentorDecision === "yes" ? "Correction saved: Yes." : "Correction saved: No. The entrepreneur can see your comment.");
+      setMessage(hasNo ? "Section corrections saved. The entrepreneur can see your No comments." : "Section corrections saved: all marked Yes.");
       setShowReviewNotice(true);
     } catch (err) {
       setMessage(err.message || "Failed to save correction.");
@@ -696,7 +795,7 @@ export default function ToolQuestionnairePage() {
     doc.text(`Generated ${dayjs().format("YYYY-MM-DD HH:mm")}`, margin, 62);
 
     y = 104;
-    addParagraph(`Completion: ${progress.percent}% (${progress.answeredCount}/${progress.totalCount} answered)`, { size: 10, color: [71, 85, 105] });
+    addParagraph(`Answers completed: ${progress.percent}% (${progress.answeredCount}/${progress.totalCount} answered)`, { size: 10, color: [71, 85, 105] });
     if (tool.description) {
       addParagraph(tool.description, { size: 10, color: [71, 85, 105] });
     }
@@ -745,6 +844,114 @@ export default function ToolQuestionnairePage() {
 
     const safeTitle = tool.title.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
     doc.save(`${safeTitle || tool.key}-${dayjs().format("YYYY-MM-DD")}.pdf`);
+  }
+
+  function renderMentorAnswerCorrections() {
+    if (!isReviewMode) return null;
+
+    return (
+      <div className="answer-correction-list">
+        <div className="answer-correction-list-head">
+          <div>
+            <h4>Answers in this step</h4>
+            <p>{currentSection?.reviewedCount || 0}/{currentSection?.totalCount || 0} checked here. If you choose No, add a short note so the entrepreneur knows what to fix.</p>
+          </div>
+          {currentReviewQuestions.length ? (
+            <button type="button" className="btn" onClick={markCurrentSectionYes}>Mark all yes</button>
+          ) : null}
+        </div>
+
+        <div className="answer-review-meter" aria-label="Mentor review progress for this tool">
+          <div>
+            <strong>{reviewProgress.percent}% mentor reviewed</strong>
+            <span>{reviewProgress.reviewedCount}/{reviewProgress.totalCount} answers checked</span>
+          </div>
+          <div className="progress-track" aria-hidden="true">
+            <div className="progress-fill" style={{ width: `${reviewProgress.percent}%` }}></div>
+          </div>
+        </div>
+
+        {currentReviewQuestions.length === 0 ? (
+          <p className="mentor-empty-note">This step has no answers to correct.</p>
+        ) : (
+          currentReviewQuestions.map((question) => {
+            const review = answerReviews[question.id] || {};
+            const answerText = formatAnswerPreview(answers[question.id]);
+
+            return (
+              <article key={`correction-${question.id}`} className="answer-correction-item">
+                <div>
+                  <strong>{question.label}</strong>
+                  <p>{answerText}</p>
+                </div>
+                <div className="answer-correction-controls">
+                  <div className="correction-choice-row" role="group" aria-label={`Correction result for ${question.label}`}>
+                    <button
+                      type="button"
+                      className={`correction-choice correction-choice-yes ${review.status === "yes" ? "active" : ""}`}
+                      onClick={() => setAnswerReviewStatus(question.id, "yes")}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      className={`correction-choice correction-choice-no ${review.status === "no" ? "active" : ""}`}
+                      onClick={() => setAnswerReviewStatus(question.id, "no")}
+                    >
+                      No
+                    </button>
+                  </div>
+                  {review.status === "no" ? (
+                    <textarea
+                      rows="2"
+                      placeholder="Why no? What should be improved?"
+                      value={review.comment || ""}
+                      onChange={(event) => setAnswerReviewComment(question.id, event.target.value)}
+                    />
+                  ) : null}
+                </div>
+              </article>
+            );
+          })
+        )}
+      </div>
+    );
+  }
+
+  function renderEntrepreneurAnswerCorrections() {
+    if (isReviewMode || !currentToolReview?.answerReviews) return null;
+    const visibleReviews = currentReviewQuestions
+      .map((question) => ({
+        ...question,
+        review: currentToolReview.answerReviews[question.id]
+      }))
+      .filter((question) => question.review?.status);
+
+    if (visibleReviews.length === 0) return null;
+
+    return (
+      <div className="answer-review-results">
+        <div className="answer-correction-list-head">
+          <div>
+            <h4>Mentor notes for this step</h4>
+            <p>Check the result for each answer before continuing.</p>
+          </div>
+        </div>
+        {visibleReviews.map((question) => (
+          <article key={`answer-result-${question.id}`} className="answer-review-result-item">
+            <div>
+              <strong>{question.label}</strong>
+              {question.review.status === "no" && question.review.comment ? (
+                <p>Why no: {question.review.comment}</p>
+              ) : null}
+            </div>
+            <span className={`correction-badge correction-badge-${question.review.status}`}>
+              {question.review.status === "yes" ? "Yes" : "No"}
+            </span>
+          </article>
+        ))}
+      </div>
+    );
   }
 
   function renderStandardInput(q) {
@@ -1126,6 +1333,18 @@ export default function ToolQuestionnairePage() {
     );
   }
 
+  function getNavigationStatus(item) {
+    if (!item || item.totalCount === 0) return "Overview";
+    const isDone = isReviewMode ? item.isReviewed : item.isComplete;
+    if (isDone) return isReviewMode ? "Reviewed" : "Done";
+    const count = isReviewMode ? item.reviewedCount : item.answeredCount;
+    return `${count}/${item.totalCount}`;
+  }
+
+  function isNavigationDone(item) {
+    return isReviewMode ? item?.isReviewed : item?.isComplete;
+  }
+
   return (
     <div className="tool-layout">
       <aside className="card tool-sidebar">
@@ -1133,7 +1352,7 @@ export default function ToolQuestionnairePage() {
           <div className="hero-kicker">Tool navigation</div>
           <h3>{tool.title}</h3>
           <p className="subtitle">
-            {canShowMentorProgress ? `${visibleProgressPercent}% after mentor correction` : "Pending mentor correction"}
+            {reviewProgress.percent}% mentor reviewed
           </p>
         </div>
 
@@ -1145,14 +1364,14 @@ export default function ToolQuestionnairePage() {
               <div key={group.id} className={`tool-step-group ${isGroupOpen ? "open" : ""}`}>
                 <button
                   type="button"
-                  className={`tool-step-group-btn ${group.hasCurrent ? "active" : ""} ${group.isComplete ? "complete" : ""}`}
+                  className={`tool-step-group-btn ${group.hasCurrent ? "active" : ""} ${isNavigationDone(group) ? "complete" : ""}`}
                   onClick={() => toggleSidebarStep(group.id)}
                   aria-expanded={isGroupOpen}
                 >
                   <div className="tool-step-top">
                     <span className="tool-step-index">{group.label}</span>
-                    <span className={`tool-step-status ${group.isComplete ? "complete" : "pending"}`}>
-                      {group.isComplete ? "Done" : `${group.answeredCount}/${group.totalCount}`}
+                    <span className={`tool-step-status ${isNavigationDone(group) ? "complete" : "pending"}`}>
+                      {getNavigationStatus(group)}
                     </span>
                   </div>
                   <strong className="tool-step-heading">{group.title}</strong>
@@ -1167,12 +1386,12 @@ export default function ToolQuestionnairePage() {
                       <button
                         key={section.id}
                         type="button"
-                        className={`tool-step-btn tool-step-child ${section.index === p ? "active" : ""} ${section.isComplete ? "complete" : ""}`}
+                        className={`tool-step-btn tool-step-child ${section.index === p ? "active" : ""} ${isNavigationDone(section) ? "complete" : ""}`}
                         onClick={() => goToSection(section.index)}
                       >
                         <strong>{section.title}</strong>
                         <span className="tool-step-meta">
-                          {section.totalCount === 0 ? "Overview" : section.isComplete ? "Done" : `${section.answeredCount}/${section.totalCount}`}
+                          {getNavigationStatus(section)}
                         </span>
                       </button>
                     ))}
@@ -1189,11 +1408,15 @@ export default function ToolQuestionnairePage() {
           <h2>{tool.title}</h2>
           <p>{isReviewMode ? "Review this work the same way the entrepreneur sees it, then save your correction below." : tool.description}</p>
           <p className="tool-progress">
-            Progress: <strong>{canShowMentorProgress ? `${visibleProgressPercent}%` : "Pending mentor correction"}</strong>
-            {" "}({progress.answeredCount}/{progress.totalCount})
+            Mentor review progress: <strong>{reviewProgress.percent}%</strong>
+            {" "}({reviewProgress.reviewedCount}/{reviewProgress.totalCount} checked)
           </p>
+          <div className="progress-track tool-review-progress-track" aria-hidden="true">
+            <div className="progress-fill" style={{ width: `${reviewProgress.percent}%` }}></div>
+          </div>
           {currentSection ? <p className="subtitle">Step {p + 1}/{sectionSummaries.length}: {currentSection.title}</p> : null}
-          <p className="subtitle">Status: {progress.status}</p>
+          <p className="subtitle">Answer completion: {progress.answeredCount}/{progress.totalCount} filled ({progress.percent}%)</p>
+          <p className="subtitle">Review status: {reviewProgress.status}</p>
           <p className="subtitle">
             Data source: {source === "project" ? "Project workspace" : source === "mentor-review" ? "Mentor review view" : "Local draft"}
           </p>
@@ -1215,7 +1438,7 @@ export default function ToolQuestionnairePage() {
                 <div>
                   <div className="hero-kicker">Mentor correction</div>
                   <h3>Mark the answers</h3>
-                  <p>Choose the result, add a clear note if needed, and save. The entrepreneur will see this result when they open their work.</p>
+                  <p>Correct the answers in this step. The entrepreneur will see each Yes or No next to the matching answer.</p>
                 </div>
                 {currentCorrectionStatus ? (
                   <span className={`correction-badge correction-badge-${currentCorrectionStatus}`}>
@@ -1224,30 +1447,7 @@ export default function ToolQuestionnairePage() {
                 ) : null}
               </div>
 
-              <div className="correction-choice-row" role="group" aria-label="Correction result">
-                <button
-                  type="button"
-                  className={`correction-choice correction-choice-yes ${mentorDecision === "yes" ? "active" : ""}`}
-                  onClick={() => setMentorDecision("yes")}
-                >
-                  Yes
-                </button>
-                <button
-                  type="button"
-                  className={`correction-choice correction-choice-no ${mentorDecision === "no" ? "active" : ""}`}
-                  onClick={() => setMentorDecision("no")}
-                >
-                  No
-                </button>
-              </div>
-
-              <textarea
-                rows="4"
-                placeholder={mentorDecision === "no" ? "Why no? Tell the entrepreneur exactly what to fix." : "Optional note for the entrepreneur"}
-                value={mentorComment}
-                onChange={(event) => setMentorComment(event.target.value)}
-                required={mentorDecision === "no"}
-              />
+              {renderMentorAnswerCorrections()}
 
               <div className="mentor-correction-actions">
                 <button className="btn primary" type="submit">Save correction</button>
@@ -1265,9 +1465,13 @@ export default function ToolQuestionnairePage() {
                 </div>
                 <button type="button" className="btn" onClick={() => setShowReviewNotice(false)}>Close</button>
               </div>
-              <p>{currentCorrectionStatus === "no" ? "Why no: " : ""}{currentToolReview.comment || currentToolReview.recommendation || "Your mentor reviewed this tool."}</p>
+              <p>
+                {currentToolReview.comment || currentToolReview.recommendation || "Your mentor reviewed this tool. Check the answer notes for details."}
+              </p>
             </div>
           ) : null}
+
+          {renderEntrepreneurAnswerCorrections()}
 
           <fieldset disabled={isReviewMode} className="tool-form-fieldset">
             {isGbm ? renderGbmPage() : renderGenericSection()}

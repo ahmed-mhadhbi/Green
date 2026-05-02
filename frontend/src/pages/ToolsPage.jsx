@@ -7,6 +7,7 @@ import { apiRequest } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import {
   buildToolProgressList,
+  calculateMentorReviewProgress,
   calculateToolProgress,
   getToolForProjectType
 } from "../utils/toolProgress";
@@ -63,8 +64,8 @@ function getCorrectionLabel(review) {
 }
 
 function getVisibleProgressLabel(progress) {
-  if (!progress?.hasMentorCorrection) return "Pending mentor correction";
-  return `${progress.reviewedPercent}%`;
+  if (!progress) return "0% mentor reviewed";
+  return `${progress.reviewedPercent || 0}% mentor reviewed`;
 }
 
 function getProjectTool(project) {
@@ -80,27 +81,30 @@ function getProjectProgress(project) {
       percent: 0,
       answeredCount: 0,
       totalCount: 0,
-      status: "Not started"
+      reviewedCount: 0,
+      reviewedPercent: 0,
+      status: "Not reviewed"
     };
   }
 
-  const progress = calculateToolProgress(tool, project.forms || {});
-  const activity = project?.toolActivity?.[tool.key] || null;
-  const percent = Number.isFinite(Number(activity?.progressPercent)) ? Number(activity.progressPercent) : progress.percent;
-  const answeredCount = Number.isFinite(Number(activity?.answeredCount)) ? Number(activity.answeredCount) : progress.answeredCount;
-  const totalCount = Number.isFinite(Number(activity?.totalCount)) ? Number(activity.totalCount) : progress.totalCount;
-  let status = "Not started";
-  if (percent > 0 && percent < 100) status = "In progress";
-  if (percent >= 100) status = "Completed";
+  const answerProgress = calculateToolProgress(tool, project.forms || {}, { projectType: project.type });
+  const mentorReview = project?.mentorToolReviews?.[tool.key] || null;
+  const reviewProgress = calculateMentorReviewProgress(tool, project.forms || {}, mentorReview, { projectType: project.type });
 
   return {
     toolKey: tool.key,
     toolTitle: tool.title,
-    ...progress,
-    percent,
-    answeredCount,
-    totalCount,
-    status
+    answerPercent: answerProgress.percent,
+    answerStatus: answerProgress.status,
+    answeredCount: answerProgress.answeredCount,
+    totalCount: answerProgress.totalCount,
+    reviewedCount: reviewProgress.reviewedCount,
+    reviewedPercent: reviewProgress.percent,
+    yesCount: reviewProgress.yesCount,
+    noCount: reviewProgress.noCount,
+    hasMentorCorrection: reviewProgress.reviewedCount > 0,
+    percent: reviewProgress.percent,
+    status: reviewProgress.status
   };
 }
 
@@ -127,8 +131,6 @@ export default function ToolsPage() {
   const [selectedEntrepreneurId, setSelectedEntrepreneurId] = useState(null);
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [selectedGroupId, setSelectedGroupId] = useState("");
-  const [reviewDecision, setReviewDecision] = useState("yes");
-  const [reviewRecommendation, setReviewRecommendation] = useState("");
   const [deletionReason, setDeletionReason] = useState("");
   const [lessonTitle, setLessonTitle] = useState("");
   const [lessonDescription, setLessonDescription] = useState("");
@@ -191,9 +193,12 @@ export default function ToolsPage() {
       steps: getToolStepGroups(tool),
       progress: progressMap[tool.key] || {
         percent: 0,
+        reviewedPercent: 0,
+        reviewedCount: 0,
+        hasMentorCorrection: false,
         answeredCount: 0,
         totalCount: tool.questions.length,
-        status: "Not started"
+        status: "Not reviewed"
       }
     }));
   }, [progressMap]);
@@ -447,39 +452,11 @@ export default function ToolsPage() {
   }, [groups, selectedGroupId]);
 
   useEffect(() => {
-    setReviewDecision(getCorrectionStatus(selectedProjectReview) === "no" ? "no" : "yes");
-    setReviewRecommendation(selectedProjectReview?.recommendation || selectedProjectReview?.comment || "");
     setDeletionReason("");
     setLessonTitle("");
     setLessonDescription("");
     setLessonFile(null);
   }, [selectedProject?.id, selectedProjectReview?.reviewedAt]);
-
-  async function submitToolReview(event) {
-    event.preventDefault();
-    if (!selectedProject || !selectedProjectTool) return;
-
-    try {
-      await apiRequest(`/projects/${selectedProject.id}/tool-review`, {
-        method: "POST",
-        token,
-        body: {
-          toolKey: selectedProjectTool.key,
-          corrected: reviewDecision === "yes",
-          verified: reviewDecision === "yes",
-          recommendation: reviewRecommendation,
-          comment: reviewRecommendation,
-          progressPercent: selectedProjectProgress?.percent || 0,
-          answeredCount: selectedProjectProgress?.answeredCount || 0,
-          totalCount: selectedProjectProgress?.totalCount || 0
-        }
-      });
-      setMentorMessage(reviewDecision === "yes" ? "Answers marked yes and saved." : "Answers marked no with your comment.");
-      await loadData();
-    } catch (err) {
-      setMentorMessage(err.message || "Failed to correct answers.");
-    }
-  }
 
   async function submitDeletionRequest(event) {
     event.preventDefault();
@@ -548,9 +525,9 @@ export default function ToolsPage() {
             <p>Groups currently managed in your workspace.</p>
           </article>
           <article className="card mentor-stat-card">
-            <span>Average improvement</span>
+            <span>Average mentor review</span>
             <strong>{mentorStats?.averageProgress || 0}%</strong>
-            <p>Average progress across your related entrepreneurs.</p>
+            <p>Average Yes/No review completion across related entrepreneurs.</p>
           </article>
           <article className="card mentor-stat-card">
             <span>Need corrections</span>
@@ -563,7 +540,7 @@ export default function ToolsPage() {
           <div className="mentor-section-head">
             <div>
               <h3>Entrepreneurs table</h3>
-              <p>Name, project, etape, status, progression, last open, and edit options in one table.</p>
+              <p>Name, project, etape, status, mentor review, last open, and edit options in one table.</p>
             </div>
           </div>
 
@@ -578,7 +555,7 @@ export default function ToolsPage() {
                     <th>Project</th>
                     <th>Etape</th>
                     <th>Status</th>
-                    <th>Progression</th>
+                    <th>Mentor review</th>
                     <th>Last open</th>
                     <th>Edit option</th>
                   </tr>
@@ -606,6 +583,7 @@ export default function ToolsPage() {
                         </td>
                         <td>
                           <strong>{row.progress.percent}%</strong>
+                          <p>{row.progress.reviewedCount}/{row.progress.totalCount} answers checked</p>
                           {correctionStatus ? (
                             <span className={`correction-badge correction-badge-${correctionStatus}`}>
                               {getCorrectionLabel(row.review)}
@@ -688,8 +666,9 @@ export default function ToolsPage() {
                     <strong>{formatProjectStatus(selectedProject.status)}</strong>
                   </div>
                   <div>
-                    <span>Progress</span>
+                    <span>Mentor review</span>
                     <strong>{selectedProjectProgress?.percent || 0}%</strong>
+                    <small>{selectedProjectProgress?.reviewedCount || 0}/{selectedProjectProgress?.totalCount || 0} answers checked</small>
                   </div>
                 </div>
 
@@ -698,7 +677,7 @@ export default function ToolsPage() {
                     <div className="mentor-card-head">
                       <div>
                         <h3>Verify answers</h3>
-                        <p>Review the entrepreneur answers, mark yes or no, and send the comment they should see.</p>
+                        <p>Open the tool, see the entrepreneur answers, and mark every answer Yes or No.</p>
                       </div>
                       {getCorrectionStatus(selectedProjectReview) ? (
                         <span className={`correction-badge correction-badge-${getCorrectionStatus(selectedProjectReview)}`}>
@@ -709,35 +688,10 @@ export default function ToolsPage() {
 
                     {selectedProjectTool ? (
                       <>
-                        <Link className="btn" to={`/app/tools/${selectedProjectTool.key}?projectId=${selectedProject.id}`}>
+                        <Link className="btn primary" to={`/app/tools/${selectedProjectTool.key}?projectId=${selectedProject.id}`}>
                           Open and correct
                         </Link>
-                        <form className="form-stack" onSubmit={submitToolReview}>
-                          <div className="correction-choice-row" role="group" aria-label="Correction result">
-                            <button
-                              type="button"
-                              className={`correction-choice correction-choice-yes ${reviewDecision === "yes" ? "active" : ""}`}
-                              onClick={() => setReviewDecision("yes")}
-                            >
-                              Yes
-                            </button>
-                            <button
-                              type="button"
-                              className={`correction-choice correction-choice-no ${reviewDecision === "no" ? "active" : ""}`}
-                              onClick={() => setReviewDecision("no")}
-                            >
-                              No
-                            </button>
-                          </div>
-                          <textarea
-                            rows="4"
-                            placeholder={reviewDecision === "no" ? "Explain what is wrong and what the entrepreneur should fix" : "Add an optional mentor comment"}
-                            value={reviewRecommendation}
-                            onChange={(event) => setReviewRecommendation(event.target.value)}
-                            required={reviewDecision === "no"}
-                          />
-                          <button className="btn primary" type="submit">Save correction</button>
-                        </form>
+                        <p className="mentor-empty-note">You will see the entrepreneur answers and mark each answer Yes or No inside the tool page.</p>
                       </>
                     ) : (
                       <p className="mentor-empty-note">This project is not linked to a tool review page yet.</p>
@@ -911,7 +865,7 @@ export default function ToolsPage() {
                       <strong>{group.memberCount}</strong>
                     </div>
                     <div>
-                      <span>Active</span>
+                      <span>Reviewed</span>
                       <strong>{group.activeMembers}</strong>
                     </div>
                     <div>
@@ -967,11 +921,11 @@ export default function ToolsPage() {
             <strong>{toolStats.total}</strong>
           </article>
           <article className="tools-page-stat">
-            <span>Started</span>
+            <span>Reviewed</span>
             <strong>{toolStats.started}</strong>
           </article>
           <article className="tools-page-stat">
-            <span>Completed</span>
+            <span>Fully checked</span>
             <strong>{toolStats.completed}</strong>
           </article>
           <article className="tools-page-stat">
@@ -1039,7 +993,7 @@ export default function ToolsPage() {
                 >
                   <div className="tool-rail-copy">
                     <strong>{tool.title}</strong>
-                    <span>{progress.hasMentorCorrection ? progress.status : "Awaiting mentor correction"}</span>
+                    <span>{progress.status}</span>
                   </div>
                   <span className="tool-rail-percent">{getVisibleProgressLabel(progress)}</span>
                   {progress.hasMentorCorrection ? (
@@ -1069,7 +1023,7 @@ export default function ToolsPage() {
                 <span className="tool-percent-chip">
                   {activeToolEntry.progress.hasMentorCorrection
                     ? `${activeToolEntry.progress.reviewedPercent}% after mentor correction`
-                    : "Pending mentor correction"}
+                    : "0% mentor reviewed"}
                 </span>
                 {activeToolEntry.progress.hasMentorCorrection ? (
                   <span className={`correction-badge correction-badge-${getCorrectionStatus(activeToolEntry.progress.mentorReview)}`}>
@@ -1077,7 +1031,10 @@ export default function ToolsPage() {
                   </span>
                 ) : null}
                 <span className="tool-browser-status">
-                  {activeToolEntry.progress.answeredCount}/{activeToolEntry.progress.totalCount} answers
+                  {activeToolEntry.progress.reviewedCount}/{activeToolEntry.progress.totalCount} answers checked
+                </span>
+                <span className="tool-browser-status">
+                  {activeToolEntry.progress.answeredCount}/{activeToolEntry.progress.totalCount} answers filled
                 </span>
                 <span className="tool-browser-status">
                   {activeToolEntry.steps.length} workflow steps

@@ -46,6 +46,44 @@ function sanitizeText(value) {
   return String(value || "").trim();
 }
 
+function sanitizeAnswerReviews(answerReviews = {}) {
+  if (!answerReviews || typeof answerReviews !== "object" || Array.isArray(answerReviews)) {
+    return {};
+  }
+
+  return Object.entries(answerReviews).reduce((acc, [questionId, review]) => {
+    const status = review?.status === "no" ? "no" : review?.status === "yes" ? "yes" : "";
+    if (!status) return acc;
+
+    acc[questionId] = {
+      status,
+      comment: sanitizeText(review?.comment),
+      reviewedAt: new Date().toISOString()
+    };
+    return acc;
+  }, {});
+}
+
+function hasAnswerReviewStatus(review) {
+  return review?.status === "yes" || review?.status === "no";
+}
+
+function calculateReviewProgress(answerReviews = {}, totalCountValue) {
+  const reviewedCount = Object.values(answerReviews).filter(hasAnswerReviewStatus).length;
+  const requestedTotalCount = Number(totalCountValue);
+  const totalCount = Number.isFinite(requestedTotalCount) && requestedTotalCount > 0
+    ? requestedTotalCount
+    : reviewedCount;
+  const clampedReviewedCount = Math.min(reviewedCount, totalCount);
+  const progressPercent = totalCount > 0 ? Math.round((clampedReviewedCount / totalCount) * 100) : 0;
+
+  return {
+    reviewedCount: clampedReviewedCount,
+    totalCount,
+    progressPercent
+  };
+}
+
 async function loadMentorEntrepreneurLinks(mentorId, entrepreneurId) {
   const [projectSnap, membershipSnap] = await Promise.all([
     db().collection("projects").where("entrepreneurId", "==", entrepreneurId).get(),
@@ -589,10 +627,10 @@ router.post("/:projectId/tool-review", authMiddleware, requireRole("mentor", "ad
     const toolKey = sanitizeText(req.body.toolKey);
     const recommendation = sanitizeText(req.body.recommendation);
     const comment = sanitizeText(req.body.comment || recommendation);
+    const answerReviewsPatch = sanitizeAnswerReviews(req.body.answerReviews);
     const corrected = req.body.corrected === undefined
       ? req.body.verified !== false
       : Boolean(req.body.corrected);
-    const progressPercent = Number(req.body.progressPercent);
     const answeredCount = Number(req.body.answeredCount);
     const totalCount = Number(req.body.totalCount);
 
@@ -602,7 +640,16 @@ router.post("/:projectId/tool-review", authMiddleware, requireRole("mentor", "ad
       throw err;
     }
 
-    if (!corrected && !comment) {
+    const missingAnswerComment = Object.entries(answerReviewsPatch).find(([, review]) => (
+      review.status === "no" && !review.comment
+    ));
+    if (missingAnswerComment) {
+      const err = new Error("comment is required when an answer is marked no");
+      err.status = 400;
+      throw err;
+    }
+
+    if (!corrected && !comment && Object.keys(answerReviewsPatch).length === 0) {
       const err = new Error("comment is required when answers are marked no");
       err.status = 400;
       throw err;
@@ -623,28 +670,39 @@ router.post("/:projectId/tool-review", authMiddleware, requireRole("mentor", "ad
       throw err;
     }
 
+    const existingReview = project.mentorToolReviews?.[toolKey] || {};
+    const answerReviews = {
+      ...(existingReview.answerReviews || {}),
+      ...answerReviewsPatch
+    };
+    const hasAnswerReviewNo = Object.values(answerReviews).some((reviewItem) => reviewItem?.status === "no");
+    const finalCorrected = Object.keys(answerReviews).length > 0 ? !hasAnswerReviewNo : corrected;
+    const reviewProgress = calculateReviewProgress(answerReviews, totalCount);
+
     const review = {
       toolKey,
-      corrected,
-      correctionStatus: corrected ? "yes" : "no",
-      verified: corrected,
-      recommendation,
-      comment,
-      progressPercent: Number.isFinite(progressPercent) ? Math.max(0, Math.min(100, Math.round(progressPercent))) : null,
+      corrected: finalCorrected,
+      correctionStatus: finalCorrected ? "yes" : "no",
+      verified: finalCorrected,
+      recommendation: recommendation || existingReview.recommendation || "",
+      comment: comment || existingReview.comment || "",
+      answerReviews,
+      progressPercent: reviewProgress.progressPercent,
+      reviewedCount: reviewProgress.reviewedCount,
       answeredCount: Number.isFinite(answeredCount) ? answeredCount : null,
-      totalCount: Number.isFinite(totalCount) ? totalCount : null,
+      totalCount: reviewProgress.totalCount,
       reviewedAt: new Date().toISOString(),
       reviewedBy: req.user.uid
     };
 
     await ref.update({
       [`mentorToolReviews.${toolKey}`]: review,
-      status: corrected ? project.status : "needs_corrections",
+      status: finalCorrected ? project.status : "needs_corrections",
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       iterations: [
         ...(project.iterations || []),
         {
-          action: corrected ? `tool_corrected_yes_${toolKey}` : `tool_corrected_no_${toolKey}`,
+          action: finalCorrected ? `tool_corrected_yes_${toolKey}` : `tool_corrected_no_${toolKey}`,
           at: new Date().toISOString(),
           by: req.user.uid
         }

@@ -232,6 +232,18 @@ function hasAnswer(value) {
   return String(value).trim().length > 0;
 }
 
+function getCorrectionStatus(review) {
+  if (!review?.reviewedAt) return null;
+  return review.correctionStatus || (review.corrected || review.verified ? "yes" : "no");
+}
+
+function getCorrectionLabel(review) {
+  const status = getCorrectionStatus(review);
+  if (status === "yes") return "Yes";
+  if (status === "no") return "No";
+  return "Pending";
+}
+
 function buildQs(page, cards, stages, stakeholderRows, vpRows) {
   if (!page) return [];
   if (page.n === 8) {
@@ -273,6 +285,8 @@ export default function ToolQuestionnairePage() {
   const [vpRows, setVpRows] = useState(1);
   const [openSidebarStepId, setOpenSidebarStepId] = useState(null);
   const [showReviewNotice, setShowReviewNotice] = useState(true);
+  const [mentorDecision, setMentorDecision] = useState("yes");
+  const [mentorComment, setMentorComment] = useState("");
   const lastSyncedAnswersRef = useRef("");
   const isGbm = tool?.key === GBM_KEY;
   const isReviewMode = profile?.role !== "entrepreneur" && Boolean(reviewProjectId);
@@ -422,8 +436,19 @@ export default function ToolQuestionnairePage() {
   const currentSection = sectionSummaries[p] || null;
   const currentStepGroup = stepGroups.find((group) => group.hasCurrent) || stepGroups[0] || null;
   const activeProject = useMemo(() => projects.find((project) => project.id === projectId) || null, [projectId, projects]);
-  const currentToolReview = activeProject?.mentorToolReviews?.[tool.key] || null;
+  const currentToolReview = activeProject?.mentorToolReviews?.[tool?.key] || null;
+  const currentCorrectionStatus = getCorrectionStatus(currentToolReview);
+  const visibleProgressPercent = Number.isFinite(Number(currentToolReview?.progressPercent))
+    ? Number(currentToolReview.progressPercent)
+    : progress.percent;
+  const canShowMentorProgress = Boolean(currentCorrectionStatus);
   const canNext = isReviewMode || (currentSection ? currentSection.isComplete : false);
+
+  useEffect(() => {
+    if (!isReviewMode) return;
+    setMentorDecision(getCorrectionStatus(currentToolReview) === "no" ? "no" : "yes");
+    setMentorComment(currentToolReview?.comment || currentToolReview?.recommendation || "");
+  }, [currentToolReview?.reviewedAt, currentToolReview?.comment, currentToolReview?.recommendation, isReviewMode]);
 
   useEffect(() => {
     if (!currentStepGroup?.id) return;
@@ -565,6 +590,36 @@ export default function ToolQuestionnairePage() {
       setMessage(projectType ? "Saved locally. Create the matching project in Dashboard to sync." : "Saved locally.");
     } catch (err) {
       setMessage(err.message || "Failed to save answers.");
+    }
+  }
+
+  async function submitMentorCorrection(event) {
+    event.preventDefault();
+    if (!isReviewMode || !projectId || !tool?.key) return;
+
+    try {
+      const res = await apiRequest(`/projects/${projectId}/tool-review`, {
+        method: "POST",
+        token,
+        body: {
+          toolKey: tool.key,
+          corrected: mentorDecision === "yes",
+          verified: mentorDecision === "yes",
+          recommendation: mentorComment,
+          comment: mentorComment,
+          progressPercent: progress.percent,
+          answeredCount: progress.answeredCount,
+          totalCount: progress.totalCount
+        }
+      });
+
+      setProjects((prev) => prev.map((project) => (
+        project.id === projectId ? res.project : project
+      )));
+      setMessage(mentorDecision === "yes" ? "Correction saved: Yes." : "Correction saved: No. The entrepreneur can see your comment.");
+      setShowReviewNotice(true);
+    } catch (err) {
+      setMessage(err.message || "Failed to save correction.");
     }
   }
 
@@ -1077,7 +1132,9 @@ export default function ToolQuestionnairePage() {
         <div className="tool-sidebar-head">
           <div className="hero-kicker">Tool navigation</div>
           <h3>{tool.title}</h3>
-          <p className="subtitle">{progress.percent}% filled overall</p>
+          <p className="subtitle">
+            {canShowMentorProgress ? `${visibleProgressPercent}% after mentor correction` : "Pending mentor correction"}
+          </p>
         </div>
 
         <div className="tool-sidebar-list">
@@ -1130,30 +1187,85 @@ export default function ToolQuestionnairePage() {
       <div className="tool-body">
         <section className="card">
           <h2>{tool.title}</h2>
-          <p>{tool.description}</p>
-          <p className="tool-progress">Progress: <strong>{progress.percent}%</strong> ({progress.answeredCount}/{progress.totalCount})</p>
+          <p>{isReviewMode ? "Review this work the same way the entrepreneur sees it, then save your correction below." : tool.description}</p>
+          <p className="tool-progress">
+            Progress: <strong>{canShowMentorProgress ? `${visibleProgressPercent}%` : "Pending mentor correction"}</strong>
+            {" "}({progress.answeredCount}/{progress.totalCount})
+          </p>
           {currentSection ? <p className="subtitle">Step {p + 1}/{sectionSummaries.length}: {currentSection.title}</p> : null}
           <p className="subtitle">Status: {progress.status}</p>
           <p className="subtitle">
             Data source: {source === "project" ? "Project workspace" : source === "mentor-review" ? "Mentor review view" : "Local draft"}
           </p>
-          {currentToolReview?.verified ? (
-            <p className="subtitle tool-verified-note">Mentor verified this tool on {dayjs(currentToolReview.reviewedAt).format("DD MMM YYYY")}.</p>
+          {currentCorrectionStatus ? (
+            <p className="subtitle tool-verified-note">
+              Mentor correction on {dayjs(currentToolReview.reviewedAt).format("DD MMM YYYY")}:{" "}
+              <span className={`correction-badge correction-badge-${currentCorrectionStatus}`}>
+                {getCorrectionLabel(currentToolReview)}
+              </span>
+            </p>
           ) : null}
           {message ? <p className="info tool-info">{message}</p> : null}
         </section>
 
         <section className="card form-stack">
+          {isReviewMode ? (
+            <form className="mentor-correction-panel" onSubmit={submitMentorCorrection}>
+              <div className="mentor-correction-panel-head">
+                <div>
+                  <div className="hero-kicker">Mentor correction</div>
+                  <h3>Mark the answers</h3>
+                  <p>Choose the result, add a clear note if needed, and save. The entrepreneur will see this result when they open their work.</p>
+                </div>
+                {currentCorrectionStatus ? (
+                  <span className={`correction-badge correction-badge-${currentCorrectionStatus}`}>
+                    {getCorrectionLabel(currentToolReview)}
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="correction-choice-row" role="group" aria-label="Correction result">
+                <button
+                  type="button"
+                  className={`correction-choice correction-choice-yes ${mentorDecision === "yes" ? "active" : ""}`}
+                  onClick={() => setMentorDecision("yes")}
+                >
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  className={`correction-choice correction-choice-no ${mentorDecision === "no" ? "active" : ""}`}
+                  onClick={() => setMentorDecision("no")}
+                >
+                  No
+                </button>
+              </div>
+
+              <textarea
+                rows="4"
+                placeholder={mentorDecision === "no" ? "Why no? Tell the entrepreneur exactly what to fix." : "Optional note for the entrepreneur"}
+                value={mentorComment}
+                onChange={(event) => setMentorComment(event.target.value)}
+                required={mentorDecision === "no"}
+              />
+
+              <div className="mentor-correction-actions">
+                <button className="btn primary" type="submit">Save correction</button>
+                <Link to="/app/tools" className="btn">Back to mentor workspace</Link>
+              </div>
+            </form>
+          ) : null}
+
           {currentToolReview && showReviewNotice ? (
             <div className="mentor-review-popup visible">
               <div className="mentor-review-popup-head">
                 <div>
                   <strong>Mentor comment</strong>
-                  <span>{currentToolReview.verified ? "Verified" : "Review available"}</span>
+                  <span>{getCorrectionLabel(currentToolReview)}</span>
                 </div>
                 <button type="button" className="btn" onClick={() => setShowReviewNotice(false)}>Close</button>
               </div>
-              <p>{currentToolReview.recommendation || currentToolReview.comment || "Your mentor reviewed this tool."}</p>
+              <p>{currentCorrectionStatus === "no" ? "Why no: " : ""}{currentToolReview.comment || currentToolReview.recommendation || "Your mentor reviewed this tool."}</p>
             </div>
           ) : null}
 

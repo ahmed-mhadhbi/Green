@@ -32,10 +32,13 @@ const PROJECT_TYPES = ["BMC", "GREEN_BMC", "GREEN_BUSINESS_PLAN"];
 const PROJECT_STAGES = ["idea", "creation", "growth"];
 const PROJECT_STATUS = ["draft", "submitted", "needs_corrections", "validated"];
 
-function canAccessProject(role, uid, project) {
+function canAccessProject(role, uid, project, options = {}) {
   if (role === "admin") return true;
   if (role === "business_support") return true;
-  if (role === "mentor") return !project.mentorId || project.mentorId === uid;
+  if (role === "mentor") {
+    if (project.mentorId === uid) return true;
+    return !project.mentorId && options.mentorEntrepreneurIds?.has(project.entrepreneurId);
+  }
   return project.entrepreneurId === uid;
 }
 
@@ -66,6 +69,32 @@ async function loadMentorEntrepreneurLinks(mentorId, entrepreneurId) {
     accessibleProjects,
     accessibleGroups
   };
+}
+
+async function loadMentorEntrepreneurIds(mentorId) {
+  const groupSnap = await db().collection("mentorGroups").where("mentorId", "==", mentorId).get();
+  if (groupSnap.empty) return new Set();
+
+  const memberSnaps = await Promise.all(
+    groupSnap.docs.map((groupDoc) => (
+      db().collection("groupMembers").where("groupId", "==", groupDoc.id).get()
+    ))
+  );
+
+  return new Set(
+    memberSnaps
+      .flatMap((snap) => snap.docs.map((doc) => doc.data().userId))
+      .filter(Boolean)
+  );
+}
+
+async function canAccessProjectAsync(role, uid, project) {
+  if (role !== "mentor") return canAccessProject(role, uid, project);
+  if (project.mentorId === uid) return true;
+  if (project.mentorId) return false;
+
+  const mentorEntrepreneurIds = await loadMentorEntrepreneurIds(uid);
+  return canAccessProject(role, uid, project, { mentorEntrepreneurIds });
 }
 
 async function loadUserProfilesByIds(userIds = []) {
@@ -139,9 +168,10 @@ router.get("/my", authMiddleware, async (req, res, next) => {
       snap = await db().collection("projects").get();
     }
 
+    const mentorEntrepreneurIds = role === "mentor" ? await loadMentorEntrepreneurIds(req.user.uid) : null;
     const projects = snap.docs
       .map((doc) => ({ id: doc.id, ...doc.data() }))
-      .filter((p) => canAccessProject(role, req.user.uid, p));
+      .filter((p) => canAccessProject(role, req.user.uid, p, { mentorEntrepreneurIds }));
 
     const profileById = await loadUserProfilesByIds(projects.map((project) => project.entrepreneurId));
     const enrichedProjects = projects.map((project) => {
@@ -250,7 +280,7 @@ router.get("/:projectId", authMiddleware, async (req, res, next) => {
     }
 
     const project = { id: snap.id, ...snap.data() };
-    if (!canAccessProject(req.userProfile.role, req.user.uid, project)) {
+    if (!(await canAccessProjectAsync(req.userProfile.role, req.user.uid, project))) {
       const err = new Error("Forbidden");
       err.status = 403;
       throw err;
@@ -417,7 +447,7 @@ router.post("/:projectId/private-lessons", authMiddleware, requireRole("mentor",
     }
 
     const project = snap.data();
-    if (!canAccessProject(req.userProfile.role, req.user.uid, project)) {
+    if (!(await canAccessProjectAsync(req.userProfile.role, req.user.uid, project))) {
       const err = new Error("Forbidden");
       err.status = 403;
       throw err;
@@ -467,7 +497,7 @@ router.post("/:projectId/feedback", authMiddleware, requireRole("mentor", "admin
     }
 
     const project = snap.data();
-    if (!canAccessProject(req.userProfile.role, req.user.uid, project)) {
+    if (!(await canAccessProjectAsync(req.userProfile.role, req.user.uid, project))) {
       const err = new Error("Forbidden");
       err.status = 403;
       throw err;
@@ -526,7 +556,7 @@ router.post("/:projectId/validate", authMiddleware, requireRole("mentor", "admin
     }
 
     const project = snap.data();
-    if (!canAccessProject(req.userProfile.role, req.user.uid, project)) {
+    if (!(await canAccessProjectAsync(req.userProfile.role, req.user.uid, project))) {
       const err = new Error("Forbidden");
       err.status = 403;
       throw err;
@@ -559,10 +589,21 @@ router.post("/:projectId/tool-review", authMiddleware, requireRole("mentor", "ad
     const toolKey = sanitizeText(req.body.toolKey);
     const recommendation = sanitizeText(req.body.recommendation);
     const comment = sanitizeText(req.body.comment || recommendation);
-    const verified = req.body.verified !== false;
+    const corrected = req.body.corrected === undefined
+      ? req.body.verified !== false
+      : Boolean(req.body.corrected);
+    const progressPercent = Number(req.body.progressPercent);
+    const answeredCount = Number(req.body.answeredCount);
+    const totalCount = Number(req.body.totalCount);
 
     if (!toolKey) {
       const err = new Error("toolKey is required");
+      err.status = 400;
+      throw err;
+    }
+
+    if (!corrected && !comment) {
+      const err = new Error("comment is required when answers are marked no");
       err.status = 400;
       throw err;
     }
@@ -576,7 +617,7 @@ router.post("/:projectId/tool-review", authMiddleware, requireRole("mentor", "ad
     }
 
     const project = snap.data();
-    if (!canAccessProject(req.userProfile.role, req.user.uid, project)) {
+    if (!(await canAccessProjectAsync(req.userProfile.role, req.user.uid, project))) {
       const err = new Error("Forbidden");
       err.status = 403;
       throw err;
@@ -584,20 +625,26 @@ router.post("/:projectId/tool-review", authMiddleware, requireRole("mentor", "ad
 
     const review = {
       toolKey,
-      verified,
+      corrected,
+      correctionStatus: corrected ? "yes" : "no",
+      verified: corrected,
       recommendation,
       comment,
+      progressPercent: Number.isFinite(progressPercent) ? Math.max(0, Math.min(100, Math.round(progressPercent))) : null,
+      answeredCount: Number.isFinite(answeredCount) ? answeredCount : null,
+      totalCount: Number.isFinite(totalCount) ? totalCount : null,
       reviewedAt: new Date().toISOString(),
       reviewedBy: req.user.uid
     };
 
     await ref.update({
       [`mentorToolReviews.${toolKey}`]: review,
+      status: corrected ? project.status : "needs_corrections",
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       iterations: [
         ...(project.iterations || []),
         {
-          action: verified ? `tool_verified_${toolKey}` : `tool_reviewed_${toolKey}`,
+          action: corrected ? `tool_corrected_yes_${toolKey}` : `tool_corrected_no_${toolKey}`,
           at: new Date().toISOString(),
           by: req.user.uid
         }

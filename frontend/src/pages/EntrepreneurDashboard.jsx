@@ -157,7 +157,15 @@ export default function EntrepreneurDashboard() {
             <article key={tool.toolKey} className="tile tool-progress-item">
               <div>
                 <h3>{tool.title}</h3>
-                <p>{tool.percent}% - {tool.status}</p>
+                <p>{getVisibleProgressLabel(tool)}</p>
+                {tool.hasMentorCorrection ? (
+                  <span className={`correction-badge correction-badge-${getCorrectionStatus(tool.mentorReview)}`}>
+                    {getCorrectionLabel(tool.mentorReview)}
+                  </span>
+                ) : null}
+                {getCorrectionStatus(tool.mentorReview) === "no" && (tool.mentorReview?.comment || tool.mentorReview?.recommendation) ? (
+                  <p className="mentor-correction-comment">{tool.mentorReview.comment || tool.mentorReview.recommendation}</p>
+                ) : null}
               </div>
               <Link className="btn" to={`/app/tools/${tool.toolKey}`}>Continue</Link>
             </article>
@@ -283,6 +291,23 @@ function resolveMediaUrl(url) {
   return url;
 }
 
+function getCorrectionStatus(review) {
+  if (!review?.reviewedAt) return null;
+  return review.correctionStatus || (review.corrected || review.verified ? "yes" : "no");
+}
+
+function getCorrectionLabel(review) {
+  const status = getCorrectionStatus(review);
+  if (status === "yes") return "Yes";
+  if (status === "no") return "No";
+  return "Pending";
+}
+
+function getVisibleProgressLabel(tool) {
+  if (!tool?.hasMentorCorrection) return "Pending mentor correction";
+  return `${tool.reviewedPercent}% - ${tool.status}`;
+}
+
 function LearningProgressCard({ item, onSave }) {
   const [raw, setRaw] = useState((item.enrollment.modulesCompleted || []).join(","));
 
@@ -308,10 +333,15 @@ function ProjectEditor({ project, onSave, onUpload }) {
     <article className="tile">
       <h3>{project.title}</h3>
       <p>Type: {project.type} | Stage: {project.stage} | Status: <strong>{project.status}</strong></p>
-      {mentorReview?.verified ? (
-        <p className="tool-verified-note">
-          Mentor verified this work on {dayjs(mentorReview.reviewedAt).format("DD MMM YYYY")}.
-        </p>
+      {getCorrectionStatus(mentorReview) ? (
+        <div className="mentor-correction-summary">
+          <span className={`correction-badge correction-badge-${getCorrectionStatus(mentorReview)}`}>
+            {getCorrectionLabel(mentorReview)}
+          </span>
+          <p>
+            Mentor corrected this work on {dayjs(mentorReview.reviewedAt).format("DD MMM YYYY")}.
+          </p>
+        </div>
       ) : null}
       <div className="form-stack">
         <textarea rows="2" placeholder="Value proposition" value={forms.valueProposition || ""} onChange={(e) => setForms({ ...forms, valueProposition: e.target.value })} />
@@ -333,7 +363,7 @@ function ProjectEditor({ project, onSave, onUpload }) {
       {(project.recommendations || []).length ? <p>Latest recommendation: {(project.recommendations || []).slice(-1)[0].text}</p> : null}
       {mentorReview?.recommendation || mentorReview?.comment ? (
         <div className="mentor-comment-callout">
-          <strong>Mentor comment</strong>
+          <strong>{getCorrectionStatus(mentorReview) === "no" ? "Why no" : "Mentor comment"}</strong>
           <p>{mentorReview.recommendation || mentorReview.comment}</p>
         </div>
       ) : null}

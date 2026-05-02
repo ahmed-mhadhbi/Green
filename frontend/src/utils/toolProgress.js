@@ -284,12 +284,20 @@ export function resolveAnswersForTool({ uid, toolKey, projects = [] }) {
 
 export function buildToolProgressList({ uid, projects = [] }) {
   return TOOLS_CATALOG.map((tool) => {
-    const { answers } = resolveAnswersForTool({ uid, toolKey: tool.key, projects });
+    const { answers, project } = resolveAnswersForTool({ uid, toolKey: tool.key, projects });
     const progress = calculateToolProgress(tool, answers);
+    const mentorReview = project?.mentorToolReviews?.[tool.key] || null;
+    const reviewedPercent = Number.isFinite(Number(mentorReview?.progressPercent))
+      ? Number(mentorReview.progressPercent)
+      : progress.percent;
 
     return {
       toolKey: tool.key,
       title: tool.title,
+      project,
+      mentorReview,
+      hasMentorCorrection: Boolean(mentorReview?.reviewedAt),
+      reviewedPercent,
       ...progress
     };
   });

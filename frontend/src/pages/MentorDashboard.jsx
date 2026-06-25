@@ -9,7 +9,8 @@ const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
 const emptyModule = {
   title: "",
   videoUrl: "",
-  documentUrl: ""
+  documentUrl: "",
+  quiz: []
 };
 
 const emptyLesson = {
@@ -53,6 +54,9 @@ export default function MentorDashboard() {
   });
 
   const [resourceFile, setResourceFile] = useState(null);
+  const [pdfCourseFile, setPdfCourseFile] = useState(null);
+  const [pdfCourseDraft, setPdfCourseDraft] = useState(null);
+  const [isGeneratingCourse, setIsGeneratingCourse] = useState(false);
 
   async function loadAll() {
     const [coursesRes, projectsRes, sessionsRes, groupsRes] = await Promise.all([
@@ -119,7 +123,7 @@ export default function MentorDashboard() {
         title: module.title.trim(),
         videoUrl: module.videoUrl.trim(),
         documentUrl: module.documentUrl.trim(),
-        quiz: []
+        quiz: Array.isArray(module.quiz) ? module.quiz : []
       }))
       .filter((module) => module.title);
 
@@ -192,6 +196,67 @@ export default function MentorDashboard() {
     setUploadResult(res.resource);
     setResourceFile(null);
     setMessage("Resource uploaded.");
+  }
+
+  async function generateCourseFromPdf(e) {
+    e.preventDefault();
+    if (!pdfCourseFile) {
+      setMessage("Please choose a PDF file first.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", pdfCourseFile);
+
+    setIsGeneratingCourse(true);
+    try {
+      const res = await apiRequest("/uploads/course-outline", {
+        method: "POST",
+        token,
+        body: formData,
+        formData: true
+      });
+
+      setPdfCourseDraft({ ...res.generated, source: res.source });
+      setMessage("Course draft generated from PDF.");
+    } finally {
+      setIsGeneratingCourse(false);
+    }
+  }
+
+  function applyPdfCourseDraft() {
+    if (!pdfCourseDraft) return;
+
+    const levelMap = {
+      débutant: "beginner",
+      debutant: "beginner",
+      intermédiaire: "intermediate",
+      intermediaire: "intermediate",
+      avancé: "advanced",
+      avance: "advanced"
+    };
+    const isGreenTrack = /green|vert|durable|eco|environnement/i.test(pdfCourseDraft.category || "");
+
+    setCourseForm((prev) => ({
+      ...prev,
+      title: pdfCourseDraft.courseTitle || prev.title,
+      description: [
+        pdfCourseDraft.subtitle,
+        pdfCourseDraft.summary,
+        ...(pdfCourseDraft.mastery || [])
+      ].filter(Boolean).join("\n\n"),
+      track: isGreenTrack ? "green" : "classic",
+      level: levelMap[(pdfCourseDraft.difficulty || "").toLowerCase()] || "beginner",
+      learningPath: isGreenTrack ? "green" : "classic",
+      modules: [
+        {
+          ...emptyModule,
+          title: pdfCourseDraft.subtitle || pdfCourseDraft.courseTitle || "Generated module",
+          quiz: pdfCourseDraft.quiz || []
+        }
+      ]
+    }));
+    setMessage("Generated draft copied into the course form.");
   }
 
   async function addFeedback(projectId, requestCorrections) {
@@ -289,6 +354,9 @@ export default function MentorDashboard() {
                   value={module.documentUrl}
                   onChange={(e) => updateModule(idx, "documentUrl", e.target.value)}
                 />
+                {Array.isArray(module.quiz) && module.quiz.length > 0 ? (
+                  <p className="subtitle"><strong>Generated quiz:</strong> {module.quiz.length} questions saved with this module.</p>
+                ) : null}
                 <div className="inline">
                   <button type="button" className="btn" onClick={() => removeModule(idx)} disabled={courseForm.modules.length === 1}>Remove module</button>
                 </div>
@@ -378,6 +446,94 @@ export default function MentorDashboard() {
           <div className="tile">
             <p><strong>Uploaded:</strong> {uploadResult.name}</p>
             <a href={`${API_ORIGIN}${uploadResult.path}`} target="_blank" rel="noreferrer">Open uploaded file</a>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="card span-2">
+        <h2>Générer un cours depuis un PDF</h2>
+        <form className="form-stack" onSubmit={generateCourseFromPdf}>
+          <input
+            type="file"
+            accept="application/pdf,.pdf"
+            onChange={(e) => setPdfCourseFile(e.target.files?.[0] || null)}
+            required
+          />
+          <div className="inline">
+            <button className="btn primary" type="submit" disabled={isGeneratingCourse}>
+              {isGeneratingCourse ? "Génération..." : "Générer le cours"}
+            </button>
+            {pdfCourseDraft ? (
+              <button className="btn" type="button" onClick={applyPdfCourseDraft}>Utiliser dans le formulaire</button>
+            ) : null}
+          </div>
+        </form>
+
+        {pdfCourseDraft ? (
+          <div className="pdf-course-draft">
+            <article className="tile pdf-course-main">
+              <div className="mentor-card-head">
+                <div>
+                  <p className="hero-kicker">Généré depuis {pdfCourseDraft.source?.name}</p>
+                  <h3>{pdfCourseDraft.courseTitle}</h3>
+                  <p>{pdfCourseDraft.subtitle}</p>
+                </div>
+                <div className="mentor-chip-row">
+                  <span className="mentor-chip">{pdfCourseDraft.category}</span>
+                  <span className="mentor-chip">{pdfCourseDraft.difficulty}</span>
+                  <span className="mentor-chip">{pdfCourseDraft.source?.pages || 0} pages</span>
+                </div>
+              </div>
+              <div className="mentor-meta-grid">
+                <div>
+                  <span>Titre de cours</span>
+                  <strong>{pdfCourseDraft.courseTitle}</strong>
+                </div>
+                <div>
+                  <span>Sous titre</span>
+                  <strong>{pdfCourseDraft.subtitle}</strong>
+                </div>
+                <div>
+                  <span>Catégorie</span>
+                  <strong>{pdfCourseDraft.category}</strong>
+                </div>
+                <div>
+                  <span>Niveau de difficulté</span>
+                  <strong>{pdfCourseDraft.difficulty}</strong>
+                </div>
+              </div>
+              <div>
+                <h3>Résumé</h3>
+                <p>{pdfCourseDraft.summary}</p>
+              </div>
+            </article>
+
+            <article className="tile">
+              <h3>Ce que vous maîtriserez</h3>
+              <ul className="pdf-course-list">
+                {(pdfCourseDraft.mastery || []).map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </article>
+
+            <article className="tile span-2">
+              <h3>Quiz</h3>
+              <div className="grid-2">
+                {(pdfCourseDraft.quiz || []).map((question, questionIndex) => (
+                  <div className="pdf-quiz-item" key={`${question.question}-${questionIndex}`}>
+                    <p><strong>{questionIndex + 1}. {question.question}</strong></p>
+                    <ol>
+                      {(question.choices || []).map((choice, choiceIndex) => (
+                        <li key={choice} className={choiceIndex === question.answerIndex ? "pdf-quiz-answer" : ""}>
+                          {choice}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                ))}
+              </div>
+            </article>
           </div>
         ) : null}
       </section>

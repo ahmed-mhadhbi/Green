@@ -349,6 +349,44 @@ textarea:focus {
   flex-wrap: wrap;
 }
 
+.pdf-course-draft {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.pdf-course-main {
+  grid-column: span 2;
+}
+
+.pdf-course-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+}
+
+.pdf-quiz-item {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  padding: 0.8rem;
+  background: #fbfffc;
+}
+
+.pdf-quiz-item p {
+  margin: 0 0 0.55rem;
+}
+
+.pdf-quiz-item ol {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.pdf-quiz-answer {
+  color: var(--brand-strong);
+  font-weight: 800;
+}
+
 .centered {
   min-height: 100vh;
   display: grid;
@@ -4038,6 +4076,15 @@ body {
 }
 
 @media (max-width: 640px) {
+  .pdf-course-draft {
+    grid-template-columns: 1fr;
+  }
+
+  .pdf-course-main,
+  .pdf-course-draft .span-2 {
+    grid-column: span 1;
+  }
+
   .mentor-meta-grid {
     grid-template-columns: 1fr;
   }

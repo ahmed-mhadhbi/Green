@@ -387,6 +387,162 @@ textarea:focus {
   font-weight: 800;
 }
 
+.card:has(.ai-course-hero) > h2:first-child {
+  display: none;
+}
+
+.ai-course-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.ai-course-copy {
+  display: grid;
+  gap: 0.7rem;
+  align-content: center;
+}
+
+.ai-course-copy h2,
+.ai-course-copy p,
+.entrepreneur-ai-head h3,
+.entrepreneur-ai-head p {
+  margin: 0;
+}
+
+.ai-course-copy form {
+  margin-top: 0.2rem;
+}
+
+.ai-course-copy form .btn.primary {
+  font-size: 0;
+}
+
+.ai-course-copy form .btn.primary::after {
+  content: "Generate with AI";
+  font-size: 0.95rem;
+}
+
+.ai-course-copy form .btn.primary:disabled::after {
+  content: "Generating with AI...";
+}
+
+.ai-course-photo {
+  min-height: 220px;
+  border: 1px solid #cfe1d7;
+  border-radius: 18px;
+  padding: 1rem;
+  background:
+    linear-gradient(145deg, #102a33 0%, #174a3c 48%, #f1b86b 100%);
+  box-shadow: inset 0 0 0 1px #ffffff24, 0 18px 36px #1b3f321f;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 0.8rem;
+  overflow: hidden;
+}
+
+.ai-photo-screen {
+  border: 1px solid #ffffff45;
+  border-radius: 14px;
+  padding: 0.75rem;
+  background: #f8fffbde;
+  display: grid;
+  align-content: end;
+  gap: 0.45rem;
+}
+
+.ai-photo-screen span {
+  display: block;
+  height: 9px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #137b55 0%, #55b7c8 58%, #edb15c 100%);
+}
+
+.ai-photo-screen span:nth-child(2) {
+  width: 78%;
+}
+
+.ai-photo-screen span:nth-child(3) {
+  width: 56%;
+}
+
+.ai-photo-core {
+  width: 74px;
+  height: 74px;
+  margin-left: auto;
+  border: 1px solid #ffffff8a;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: #11342b;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  box-shadow: 0 12px 28px #0c241d5c;
+}
+
+.ai-chip {
+  border-color: #b9e2ef;
+  background: #eefaff;
+  color: #14566a;
+}
+
+.ai-thinking-panel {
+  margin-top: 1rem;
+  border: 1px solid #c9dfd2;
+  border-radius: 16px;
+  padding: 0.9rem;
+  background: #fbfffc;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.ai-thinking-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.ai-thinking-head span {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.ai-thinking-track {
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #dceee4;
+}
+
+.ai-thinking-fill {
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #127752 0%, #55b7c8 52%, #edb15c 100%);
+  animation: aiThinking 1.25s ease-in-out infinite;
+}
+
+.ai-thinking-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.ai-thinking-steps span {
+  border: 1px solid #d9e8df;
+  border-radius: 999px;
+  padding: 0.35rem 0.55rem;
+  background: #ffffff;
+  color: #2b5645;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+}
+
 .centered {
   min-height: 100vh;
   display: grid;
@@ -958,6 +1114,96 @@ th {
   font-size: 0.9rem;
 }
 
+.entrepreneur-ai-chat {
+  border: 1px solid #c8ddd2;
+  border-radius: 18px;
+  padding: 1rem;
+  background:
+    linear-gradient(135deg, #f8fffb 0%, #eef8f9 58%, #fff8ec 100%);
+  display: grid;
+  gap: 0.85rem;
+}
+
+.entrepreneur-ai-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.entrepreneur-ai-head p {
+  color: var(--muted);
+}
+
+.ai-chat-avatar {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1px solid #b9e2ef;
+  background: #10362b;
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+.ai-chat-context {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border: 1px solid #d8e8df;
+  border-radius: 14px;
+  padding: 0.7rem;
+  background: #ffffffb8;
+}
+
+.ai-chat-context span {
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.ai-chat-messages {
+  display: grid;
+  gap: 0.6rem;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.ai-chat-bubble {
+  width: min(92%, 720px);
+  border: 1px solid #d9e8df;
+  border-radius: 14px;
+  padding: 0.72rem 0.8rem;
+  background: #ffffff;
+  color: #264c3d;
+  line-height: 1.5;
+}
+
+.ai-chat-bubble.user {
+  justify-self: end;
+  border-color: #b9e2ef;
+  background: #eefaff;
+}
+
+.ai-chat-bubble.assistant {
+  justify-self: start;
+}
+
+.ai-chat-quick,
+.ai-chat-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ai-chat-form input {
+  flex: 1 1 260px;
+}
+
 .eco-tool {
   display: flex;
   flex-direction: column;
@@ -1468,6 +1714,20 @@ th {
   }
 }
 
+@keyframes aiThinking {
+  0% {
+    transform: translateX(-110%);
+  }
+
+  50% {
+    transform: translateX(80%);
+  }
+
+  100% {
+    transform: translateX(250%);
+  }
+}
+
 @media (max-width: 960px) {
   .app-frame,
   .dashboard-grid,
@@ -1512,6 +1772,11 @@ th {
 
   .tool-progress-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ai-course-hero,
+  .ai-thinking-steps {
+    grid-template-columns: 1fr;
   }
 
   .tool-browser-step-list {

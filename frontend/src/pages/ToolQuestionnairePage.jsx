@@ -226,6 +226,41 @@ const ecoCards = [
   ["eco_infra", "Infrastructure"]
 ];
 const EMPTY_ANSWER = "(not answered yet)";
+const AI_COACH_STARTER = {
+  role: "assistant",
+  text: "Hi, I am your AI business coach. Ask me how to answer this step, or use the quick buttons for a focused prompt."
+};
+
+function buildAiCoachReply({ message, questions, answers, sectionTitle, toolTitle }) {
+  const normalized = String(message || "").toLowerCase();
+  const unanswered = questions.filter((question) => !hasAnswer(answers[question.id]));
+  const answered = questions.filter((question) => hasAnswer(answers[question.id]));
+  const focusQuestion = unanswered[0] || questions[0];
+  const contextAnswer = answered
+    .slice(0, 3)
+    .map((question) => `${question.label}: ${formatAnswerPreview(answers[question.id])}`)
+    .join(" | ");
+
+  if (!questions.length) {
+    return `This part of ${toolTitle} is mostly guidance. Read the step, then write down the decision you need to make next, the evidence you have, and the action you will test.`;
+  }
+
+  if (normalized.includes("example") || normalized.includes("draft")) {
+    return `Starter draft for "${focusQuestion.label}": describe the customer or problem, explain why it matters, then add one concrete proof point. You can adapt this pattern: "Our project helps [customer] solve [problem] by [solution], creating [environmental/social/business value]."`;
+  }
+
+  if (normalized.includes("improve") || normalized.includes("better")) {
+    return `To improve this step, make each answer specific: name the stakeholder, quantify the need where possible, and connect it to your green business model. Current context: ${contextAnswer || "no previous answers yet"}.`;
+  }
+
+  if (normalized.includes("next") || normalized.includes("priority")) {
+    return unanswered.length
+      ? `Start with "${focusQuestion.label}". A useful answer should include who is affected, what happens today, why it matters, and what your venture will do about it.`
+      : `This section looks complete. Review whether every answer includes evidence, a business implication, and an action you can test.`;
+  }
+
+  return `For "${sectionTitle}", focus on ${focusQuestion?.label || "the current question"}. Write a practical answer in three parts: what you know, why it matters for the entrepreneur, and what decision or action follows.`;
+}
 
 function getGbmInstructionTitle(pageNumber) {
   return GBM_NAVIGATION_SECTIONS[pageNumber - 1]?.title || null;
@@ -299,6 +334,8 @@ export default function ToolQuestionnairePage() {
   const [openSidebarStepId, setOpenSidebarStepId] = useState(null);
   const [showReviewNotice, setShowReviewNotice] = useState(true);
   const [answerReviews, setAnswerReviews] = useState({});
+  const [aiChatInput, setAiChatInput] = useState("");
+  const [aiChatMessages, setAiChatMessages] = useState([AI_COACH_STARTER]);
   const lastSyncedAnswersRef = useRef("");
   const activeProject = useMemo(() => projects.find((project) => project.id === projectId) || null, [projectId, projects]);
   const isGbm = tool?.key === GBM_KEY && activeProject?.type !== "BMC";
@@ -479,8 +516,25 @@ export default function ToolQuestionnairePage() {
         label: question.label
       }));
   }, [currentSection, isGbm, pageQs, questionMap]);
+  const currentAiQuestions = useMemo(() => {
+    if (!currentSection) return [];
+    if (isGbm) return pageQs;
+    return currentSection.questionIds
+      .map((questionId) => questionMap.get(questionId))
+      .filter(Boolean)
+      .map((question) => ({
+        id: question.id,
+        label: question.label,
+        description: question.description || ""
+      }));
+  }, [currentSection, isGbm, pageQs, questionMap]);
   const currentCorrectionStatus = getCorrectionStatus(currentToolReview);
   const canNext = isReviewMode || (currentSection ? currentSection.isComplete : false);
+
+  useEffect(() => {
+    setAiChatMessages([AI_COACH_STARTER]);
+    setAiChatInput("");
+  }, [p, toolKey]);
 
   useEffect(() => {
     if (!isReviewMode) return;
@@ -967,6 +1021,78 @@ export default function ToolQuestionnairePage() {
       return <input id={q.id} type="text" value={answers[q.id] || ""} onChange={(e) => setA(q.id, e.target.value)} />;
     }
     return <textarea id={q.id} rows="3" value={answers[q.id] || ""} onChange={(e) => setA(q.id, e.target.value)} />;
+  }
+
+  function askAiCoach(prompt) {
+    const cleanPrompt = String(prompt || "").trim();
+    if (!cleanPrompt) return;
+
+    const reply = buildAiCoachReply({
+      message: cleanPrompt,
+      questions: currentAiQuestions,
+      answers,
+      sectionTitle: currentSection?.title || tool.title,
+      toolTitle: tool.title
+    });
+
+    setAiChatMessages((current) => [
+      ...current,
+      { role: "user", text: cleanPrompt },
+      { role: "assistant", text: reply }
+    ]);
+    setAiChatInput("");
+  }
+
+  function submitAiCoach(event) {
+    event.preventDefault();
+    askAiCoach(aiChatInput);
+  }
+
+  function renderAiCoachPanel() {
+    if (isReviewMode) return null;
+
+    const openQuestions = currentAiQuestions.filter((question) => !hasAnswer(answers[question.id]));
+
+    return (
+      <div className="entrepreneur-ai-chat">
+        <div className="entrepreneur-ai-head">
+          <div>
+            <div className="hero-kicker">AI chatbot</div>
+            <h3>Entrepreneur question coach</h3>
+            <p>Get help shaping clear answers for this step.</p>
+          </div>
+          <div className="ai-chat-avatar" aria-hidden="true">AI</div>
+        </div>
+
+        <div className="ai-chat-context">
+          <strong>{currentSection?.title || tool.title}</strong>
+          <span>{openQuestions.length ? `${openQuestions.length} questions still need an answer` : "All questions in this step are filled"}</span>
+        </div>
+
+        <div className="ai-chat-messages" aria-live="polite">
+          {aiChatMessages.map((item, index) => (
+            <div key={`${item.role}-${index}`} className={`ai-chat-bubble ${item.role}`}>
+              {item.text}
+            </div>
+          ))}
+        </div>
+
+        <div className="ai-chat-quick">
+          <button type="button" className="btn" onClick={() => askAiCoach("What should I answer next?")}>Help me answer</button>
+          <button type="button" className="btn" onClick={() => askAiCoach("Draft an example answer")}>Draft example</button>
+          <button type="button" className="btn" onClick={() => askAiCoach("How can I improve this answer?")}>Improve answer</button>
+        </div>
+
+        <form className="ai-chat-form" onSubmit={submitAiCoach}>
+          <input
+            value={aiChatInput}
+            onChange={(event) => setAiChatInput(event.target.value)}
+            placeholder="Ask the AI coach about this question"
+          />
+          <button className="btn primary" type="submit">Ask AI</button>
+        </form>
+      </div>
+    );
   }
 
   function renderSectionIntro(title, description, helperText) {
@@ -1472,6 +1598,8 @@ export default function ToolQuestionnairePage() {
           ) : null}
 
           {renderEntrepreneurAnswerCorrections()}
+
+          {renderAiCoachPanel()}
 
           <fieldset disabled={isReviewMode} className="tool-form-fieldset">
             {isGbm ? renderGbmPage() : renderGenericSection()}

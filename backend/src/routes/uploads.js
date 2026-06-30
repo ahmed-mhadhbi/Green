@@ -205,6 +205,8 @@ function generateCourseOutline(text, info, totalPages) {
     subtitle,
     category,
     difficulty,
+    generatedWithAi: true,
+    generatorLabel: "AI-assisted PDF course generator",
     mastery: buildMastery(topTerms, category),
     quiz: buildQuiz(topTerms, category),
     summary: buildSummary(sentences, category, topTerms)

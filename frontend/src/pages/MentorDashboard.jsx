@@ -20,6 +20,13 @@ const emptyLesson = {
   documentUrl: ""
 };
 
+const PDF_THINKING_STEPS = [
+  "Reading PDF structure",
+  "Finding course themes",
+  "Building quiz questions",
+  "Polishing the learning outline"
+];
+
 export default function MentorDashboard() {
   const { token } = useAuth();
 
@@ -209,6 +216,7 @@ export default function MentorDashboard() {
     formData.append("file", pdfCourseFile);
 
     setIsGeneratingCourse(true);
+    setPdfCourseDraft(null);
     try {
       const res = await apiRequest("/uploads/course-outline", {
         method: "POST",
@@ -218,7 +226,7 @@ export default function MentorDashboard() {
       });
 
       setPdfCourseDraft({ ...res.generated, source: res.source });
-      setMessage("Course draft generated from PDF.");
+      setMessage("AI-assisted course draft generated from PDF.");
     } finally {
       setIsGeneratingCourse(false);
     }
@@ -452,6 +460,13 @@ export default function MentorDashboard() {
 
       <section className="card span-2">
         <h2>Générer un cours depuis un PDF</h2>
+        <div className="ai-course-hero">
+          <div className="ai-course-copy">
+            <div className="hero-kicker">Generated with AI</div>
+            <h2>AI PDF course generator</h2>
+            <p>
+              Upload a PDF, then generate a title, summary, mastery goals, and quiz draft for your learning module.
+            </p>
         <form className="form-stack" onSubmit={generateCourseFromPdf}>
           <input
             type="file"
@@ -468,6 +483,33 @@ export default function MentorDashboard() {
             ) : null}
           </div>
         </form>
+          </div>
+          <div className="ai-course-photo" aria-hidden="true">
+            <div className="ai-photo-screen">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <div className="ai-photo-core">AI</div>
+          </div>
+        </div>
+
+        {isGeneratingCourse ? (
+          <div className="ai-thinking-panel" role="status" aria-live="polite">
+            <div className="ai-thinking-head">
+              <strong>AI is thinking</strong>
+              <span>{pdfCourseFile?.name || "Selected PDF"}</span>
+            </div>
+            <div className="ai-thinking-track" aria-hidden="true">
+              <div className="ai-thinking-fill"></div>
+            </div>
+            <div className="ai-thinking-steps">
+              {PDF_THINKING_STEPS.map((step) => (
+                <span key={step}>{step}</span>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {pdfCourseDraft ? (
           <div className="pdf-course-draft">
@@ -479,6 +521,7 @@ export default function MentorDashboard() {
                   <p>{pdfCourseDraft.subtitle}</p>
                 </div>
                 <div className="mentor-chip-row">
+                  <span className="mentor-chip ai-chip">{pdfCourseDraft.generatorLabel || "AI-assisted"}</span>
                   <span className="mentor-chip">{pdfCourseDraft.category}</span>
                   <span className="mentor-chip">{pdfCourseDraft.difficulty}</span>
                   <span className="mentor-chip">{pdfCourseDraft.source?.pages || 0} pages</span>

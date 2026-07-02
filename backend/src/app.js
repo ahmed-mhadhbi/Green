@@ -11,6 +11,7 @@ const sessionRoutes = require("./routes/sessions");
 const adminRoutes = require("./routes/admin");
 const uploadRoutes = require("./routes/uploads");
 const groupRoutes = require("./routes/groups");
+const aiRoutes = require("./routes/ai");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
 
 const app = express();
@@ -32,6 +33,7 @@ app.use("/api/sessions", sessionRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/groups", groupRoutes);
+app.use("/api/ai", aiRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

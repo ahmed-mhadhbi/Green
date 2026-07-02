@@ -231,37 +231,6 @@ const AI_COACH_STARTER = {
   text: "Hi, I am your AI business coach. Ask me how to answer this step, or use the quick buttons for a focused prompt."
 };
 
-function buildAiCoachReply({ message, questions, answers, sectionTitle, toolTitle }) {
-  const normalized = String(message || "").toLowerCase();
-  const unanswered = questions.filter((question) => !hasAnswer(answers[question.id]));
-  const answered = questions.filter((question) => hasAnswer(answers[question.id]));
-  const focusQuestion = unanswered[0] || questions[0];
-  const contextAnswer = answered
-    .slice(0, 3)
-    .map((question) => `${question.label}: ${formatAnswerPreview(answers[question.id])}`)
-    .join(" | ");
-
-  if (!questions.length) {
-    return `This part of ${toolTitle} is mostly guidance. Read the step, then write down the decision you need to make next, the evidence you have, and the action you will test.`;
-  }
-
-  if (normalized.includes("example") || normalized.includes("draft")) {
-    return `Starter draft for "${focusQuestion.label}": describe the customer or problem, explain why it matters, then add one concrete proof point. You can adapt this pattern: "Our project helps [customer] solve [problem] by [solution], creating [environmental/social/business value]."`;
-  }
-
-  if (normalized.includes("improve") || normalized.includes("better")) {
-    return `To improve this step, make each answer specific: name the stakeholder, quantify the need where possible, and connect it to your green business model. Current context: ${contextAnswer || "no previous answers yet"}.`;
-  }
-
-  if (normalized.includes("next") || normalized.includes("priority")) {
-    return unanswered.length
-      ? `Start with "${focusQuestion.label}". A useful answer should include who is affected, what happens today, why it matters, and what your venture will do about it.`
-      : `This section looks complete. Review whether every answer includes evidence, a business implication, and an action you can test.`;
-  }
-
-  return `For "${sectionTitle}", focus on ${focusQuestion?.label || "the current question"}. Write a practical answer in three parts: what you know, why it matters for the entrepreneur, and what decision or action follows.`;
-}
-
 function getGbmInstructionTitle(pageNumber) {
   return GBM_NAVIGATION_SECTIONS[pageNumber - 1]?.title || null;
 }
@@ -336,6 +305,7 @@ export default function ToolQuestionnairePage() {
   const [answerReviews, setAnswerReviews] = useState({});
   const [aiChatInput, setAiChatInput] = useState("");
   const [aiChatMessages, setAiChatMessages] = useState([AI_COACH_STARTER]);
+  const [aiCoachLoading, setAiCoachLoading] = useState(false);
   const lastSyncedAnswersRef = useRef("");
   const activeProject = useMemo(() => projects.find((project) => project.id === projectId) || null, [projectId, projects]);
   const isGbm = tool?.key === GBM_KEY && activeProject?.type !== "BMC";
@@ -1023,24 +993,42 @@ export default function ToolQuestionnairePage() {
     return <textarea id={q.id} rows="3" value={answers[q.id] || ""} onChange={(e) => setA(q.id, e.target.value)} />;
   }
 
-  function askAiCoach(prompt) {
+  async function askAiCoach(prompt) {
     const cleanPrompt = String(prompt || "").trim();
-    if (!cleanPrompt) return;
+    if (!cleanPrompt || aiCoachLoading) return;
 
-    const reply = buildAiCoachReply({
-      message: cleanPrompt,
-      questions: currentAiQuestions,
-      answers,
-      sectionTitle: currentSection?.title || tool.title,
-      toolTitle: tool.title
-    });
+    const history = aiChatMessages
+      .filter((item) => !(item.role === "assistant" && item.text === AI_COACH_STARTER.text))
+      .map(({ role, text }) => ({ role, text }));
 
-    setAiChatMessages((current) => [
-      ...current,
-      { role: "user", text: cleanPrompt },
-      { role: "assistant", text: reply }
-    ]);
+    setAiChatMessages((current) => [...current, { role: "user", text: cleanPrompt }]);
     setAiChatInput("");
+    setAiCoachLoading(true);
+
+    try {
+      const res = await apiRequest("/ai/coach", {
+        method: "POST",
+        token,
+        body: {
+          message: cleanPrompt,
+          toolKey,
+          toolTitle: tool.title,
+          sectionTitle: currentSection?.title || tool.title,
+          questions: currentAiQuestions,
+          answers,
+          history
+        }
+      });
+
+      setAiChatMessages((current) => [...current, { role: "assistant", text: res.reply }]);
+    } catch (error) {
+      setAiChatMessages((current) => [
+        ...current,
+        { role: "assistant", text: `Sorry, I could not reach the AI coach right now. ${error.message}` }
+      ]);
+    } finally {
+      setAiCoachLoading(false);
+    }
   }
 
   function submitAiCoach(event) {
@@ -1075,12 +1063,13 @@ export default function ToolQuestionnairePage() {
               {item.text}
             </div>
           ))}
+          {aiCoachLoading ? <div className="ai-chat-bubble assistant loading">Thinking...</div> : null}
         </div>
 
         <div className="ai-chat-quick">
-          <button type="button" className="btn" onClick={() => askAiCoach("What should I answer next?")}>Help me answer</button>
-          <button type="button" className="btn" onClick={() => askAiCoach("Draft an example answer")}>Draft example</button>
-          <button type="button" className="btn" onClick={() => askAiCoach("How can I improve this answer?")}>Improve answer</button>
+          <button type="button" className="btn" disabled={aiCoachLoading} onClick={() => askAiCoach("What should I answer next?")}>Help me answer</button>
+          <button type="button" className="btn" disabled={aiCoachLoading} onClick={() => askAiCoach("Draft an example answer")}>Draft example</button>
+          <button type="button" className="btn" disabled={aiCoachLoading} onClick={() => askAiCoach("How can I improve this answer?")}>Improve answer</button>
         </div>
 
         <form className="ai-chat-form" onSubmit={submitAiCoach}>
@@ -1088,8 +1077,11 @@ export default function ToolQuestionnairePage() {
             value={aiChatInput}
             onChange={(event) => setAiChatInput(event.target.value)}
             placeholder="Ask the AI coach about this question"
+            disabled={aiCoachLoading}
           />
-          <button className="btn primary" type="submit">Ask AI</button>
+          <button className="btn primary" type="submit" disabled={aiCoachLoading}>
+            {aiCoachLoading ? "Thinking..." : "Ask AI"}
+          </button>
         </form>
       </div>
     );

@@ -1192,6 +1192,11 @@ th {
   justify-self: start;
 }
 
+.ai-chat-bubble.loading {
+  color: #4a665c;
+  font-style: italic;
+}
+
 .ai-chat-quick,
 .ai-chat-form {
   display: flex;

@@ -37,7 +37,7 @@ npm run dev
 ## Environment notes
 - Backend requires Firebase Admin credentials in `.env`.
 - Frontend requires Firebase Web app config and backend URL.
-- AI entrepreneur coach uses Google AI Studio (Gemini). Add `GEMINI_API_KEY` to `backend/.env` (get a free key at [Google AI Studio](https://aistudio.google.com/apikey)). Optional: `GEMINI_MODEL` (default `gemini-2.0-flash`).
+- AI entrepreneur coach uses Google AI Studio (Gemini). Add `GEMINI_API_KEY` to `backend/.env` (get a free key at [Google AI Studio](https://aistudio.google.com/apikey)). Optional: `GEMINI_MODEL` (default `gemini-2.5-flash`).
 - First admin user can be promoted by setting role from Firestore manually once, then use admin panel.
 - This project uses the npm/module approach for Firebase (`import ... from "firebase/..."`) rather than `<script>` tags.
 

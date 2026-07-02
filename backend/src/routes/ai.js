@@ -131,7 +131,7 @@ router.post("/coach", authMiddleware, requireRole("entrepreneur"), async (req, r
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+      model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
       systemInstruction: buildSystemInstruction()
     });
 
@@ -150,11 +150,23 @@ router.post("/coach", authMiddleware, requireRole("entrepreneur"), async (req, r
 
     res.json({ reply, source: "gemini" });
   } catch (error) {
-    if (error?.status === 429 || String(error?.message || "").includes("429")) {
-      const err = new Error("AI coach rate limit reached. Please try again in a moment.");
-      err.status = 429;
-      return next(err);
+    const message = String(error?.message || "");
+    const isQuotaError = error?.status === 429 || message.includes("429") || message.includes("quota");
+
+    if (isQuotaError) {
+      console.warn("Gemini quota exceeded, using fallback coach:", message.split("\n")[0]);
+      return res.json({
+        reply: buildFallbackCoachReply({
+          message: req.body?.message,
+          questions: req.body?.questions || [],
+          answers: req.body?.answers || {},
+          sectionTitle: req.body?.sectionTitle || "Current section",
+          toolTitle: req.body?.toolTitle || "Business tool"
+        }),
+        source: "fallback-quota"
+      });
     }
+
     next(error);
   }
 });

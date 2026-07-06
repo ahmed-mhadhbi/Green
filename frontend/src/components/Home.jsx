@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getRoleLabel } from "../utils/roleLabels";
-import { db } from "../firebase";
-import { collection, query, where, getCountFromServer, getDoc, doc } from "firebase/firestore";
 
 const HUB_NAV_ITEMS = [
   { key: "tools", title: "Tools", getTo: ({ toolsHref }) => toolsHref },
@@ -21,54 +19,6 @@ export default function Home() {
   const { firebaseUser, profile, logout } = useAuth();
   const [showHubToolsPopup, setShowHubToolsPopup] = useState(false);
   const dashboardLabel = getRoleLabel(profile?.role, "Dashboard");
-
-  const [statsData, setStatsData] = useState([
-    { number: 0, label: "Entrepreneurs", desc: "Persons supported to develop their Sustainable Businesses." },
-    { number: 0, label: "Trainers", desc: "Experts trained in Sustainable Business Model Development." },
-    { number: 0, label: "BSO", desc: "Business Support Organizations members of the Green Impact Support Programme." },
-    { number: 0, label: "Members", desc: "Eco-innovators of The GreenImpact community." },
-    { number: "0%", label: "are women", desc: "% of supported entrepreneurs that are women" },
-    { number: "0%", label: "are satisfied", desc: "% of entrepreneurs that are satisfied with the supporting services and tools" },
-    { number: 0, label: "Sources", desc: "Sources of financing available in our database" },
-    { number: 0, label: "Million", desc: "Million EUR raised by The Green Impact Fund" }
-  ]);
-  const [statsLoaded, setStatsLoaded] = useState(false);
-
-  useEffect(() => {
-    async function loadStats() {
-      try {
-        const usersCol = collection(db, "users");
-
-        const [entrepreneursSnap, mentorsSnap, bsoSnap, totalSnap, platformDoc] = await Promise.all([
-          getCountFromServer(query(usersCol, where("role", "==", "entrepreneur"))),
-          getCountFromServer(query(usersCol, where("role", "==", "mentor"))),
-          getCountFromServer(query(usersCol, where("role", "==", "business_support"))),
-          getCountFromServer(query(usersCol)),
-          getDoc(doc(db, "stats", "platform")).catch(() => null)
-        ]);
-
-        const manual = platformDoc?.data() || {};
-
-        setStatsData([
-          { number: entrepreneursSnap.data().count, label: "Entrepreneurs", desc: "Persons supported to develop their Sustainable Businesses." },
-          { number: mentorsSnap.data().count, label: "Trainers", desc: "Experts trained in Sustainable Business Model Development." },
-          { number: bsoSnap.data().count, label: "BSO", desc: "Business Support Organizations members of the Green Impact Support Programme." },
-          { number: totalSnap.data().count, label: "Members", desc: "Eco-innovators of The GreenImpact community." },
-          { number: manual.womenPercentage || "0%", label: "are women", desc: "% of supported entrepreneurs that are women" },
-          { number: manual.satisfiedPercentage || "0%", label: "are satisfied", desc: "% of entrepreneurs that are satisfied with the supporting services and tools" },
-          { number: Number(manual.sources) || 0, label: "Sources", desc: "Sources of financing available in our database" },
-          { number: Number(manual.millionRaised) || 0, label: "Million", desc: "Million EUR raised by The Green Impact Fund" }
-        ]);
-      } catch (err) {
-        console.error("Failed to load stats:", err);
-      } finally {
-        setStatsLoaded(true);
-      }
-    }
-
-    loadStats();
-  }, []);
-
   useEffect(() => {
     const handleScroll = () => {
       const navbar = document.querySelector(".navbar");
@@ -96,8 +46,6 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!statsLoaded) return; // Wait until stats are fetched
-
     const animateCounter = (element, target, duration = 2000) => {
       let start = 0;
       const increment = target / (duration / 16);
@@ -118,10 +66,9 @@ export default function Home() {
           if (entry.isIntersecting) {
             const numbers = entry.target.querySelectorAll(".stat-number");
             numbers.forEach((num) => {
-              const value = parseFloat(num.dataset.targetValue) || 0;
-              const isPercentage = num.dataset.isPercentage === 'true';
-
-              if (isPercentage) {
+              const text = num.textContent;
+              const value = parseInt(text.replace(/[^\d]/g, ""), 10);
+              if (text.includes("%")) {
                 const temp = document.createElement("span");
                 temp.textContent = "0";
                 num.textContent = "";
@@ -141,11 +88,9 @@ export default function Home() {
       { threshold: 0.5 }
     );
 
-    if (statsRef.current) {
-      statsObserver.observe(statsRef.current);
-    }
+    if (statsRef.current) statsObserver.observe(statsRef.current);
     return () => statsObserver.disconnect();
-  }, [statsLoaded]);
+  }, []);
 
   useEffect(() => {
     if (!hubRef.current) return undefined;
@@ -380,24 +325,22 @@ export default function Home() {
 
         <section className="stats" ref={statsRef}>
           <div className="stats-grid">
-            {statsData.map((stat, idx) => {
-              const isPercentage = String(stat.number).includes('%');
-              const numericValue = parseFloat(String(stat.number).replace(/[^\d.-]/g, '')) || 0;
-
-              return (
-                <div key={idx} className="stat-item">
-                  <span
-                    className="stat-number"
-                    data-target-value={numericValue}
-                    data-is-percentage={isPercentage}
-                  >
-                    0{isPercentage ? "%" : ""}
-                  </span>
-                  <div className="stat-label">{stat.label}</div>
-                  <p className="stat-description">{stat.desc}</p>
-                </div>
-              );
-            })}
+            {[
+              { number: 0, label: "Entrepreneurs", desc: "Persons supported to develop their Sustainable Businesses." },
+              { number: 0, label: "Trainers", desc: "Experts trained in Sustainable Business Model Development." },
+              { number: 0, label: "BSO", desc: "Business Support Organizations members of the Green Impact Support Programme." },
+              { number: 0, label: "Members", desc: "Eco-innovators of The GreenImpact community." },
+              { number: "0%", label: "are women", desc: "% of supported entrepreneurs that are women" },
+              { number: "0%", label: "are satisfied", desc: "% of entrepreneurs that are satisfied with the supporting services and tools" },
+              { number: 0, label: "Sources", desc: "Sources of financing available in our database" },
+              { number: 0, label: "Million", desc: "Million EUR raised by The Green Impact Fund" }
+            ].map((stat, idx) => (
+              <div key={idx} className="stat-item">
+                <span className="stat-number">{stat.number}</span>
+                <div className="stat-label">{stat.label}</div>
+                <p className="stat-description">{stat.desc}</p>
+              </div>
+            ))}
           </div>
         </section>
       </section>

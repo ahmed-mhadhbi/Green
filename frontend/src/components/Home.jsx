@@ -19,7 +19,6 @@ export default function Home() {
   const { firebaseUser, profile, logout } = useAuth();
   const [showHubToolsPopup, setShowHubToolsPopup] = useState(false);
   const dashboardLabel = getRoleLabel(profile?.role, "Dashboard");
-
   useEffect(() => {
     const handleScroll = () => {
       const navbar = document.querySelector(".navbar");
@@ -194,7 +193,7 @@ export default function Home() {
               <h3>Trainer registration</h3>
               <p>For mentors and trainers supporting green businesses.</p>
             </Link>
-            
+
           </div>
           <div className="join-actions">
             <Link to="/join-us" className="btn primary">Open Join Us forms</Link>
@@ -287,9 +286,15 @@ export default function Home() {
           </div>
 
           <div className="about-visual animate-on-scroll">
-            <div className="visual-circle"></div>
-            <div className="visual-circle"></div>
-            <div className="visual-circle"></div>
+            <div className="visual-photo visual-photo-1">
+              <img src="/images/about-visual1.jpg" alt="Reduce Reuse Recycle" />
+            </div>
+            <div className="visual-photo visual-photo-2">
+              <img src="/images/about-visual2.jpg" alt="Green energy and plant growth" />
+            </div>
+            <div className="visual-photo visual-photo-3">
+              <img src="/images/about-visual3.png" alt="Sustainable forest ecosystem" />
+            </div>
           </div>
         </div>
 
@@ -421,7 +426,6 @@ export default function Home() {
     </div>
   );
 }
-
 
 
 

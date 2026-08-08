@@ -1864,6 +1864,12 @@ body {
   align-items: center;
 }
 
+.home-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
 .logo {
   font-family: 'Segoe UI', serif;
   font-size: 1.8rem;
@@ -1889,7 +1895,7 @@ body {
 
 .nav-links {
   display: flex;
-  gap: 2.5rem;
+  gap: clamp(0.85rem, 1.65vw, 2rem);
   list-style: none;
   align-items: center;
 }
@@ -1938,6 +1944,37 @@ body {
 
 .login-btn::after {
   display: none;
+}
+
+.language-switch {
+  min-width: 78px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.28rem;
+  border: 1px solid #b9d5c7;
+  border-radius: 999px;
+  background: #f5faf7;
+  color: #668077;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.language-switch .active {
+  color: #164f3b;
+}
+
+.language-switch:hover,
+.language-switch:focus-visible {
+  border-color: #4f9c79;
+  box-shadow: 0 8px 20px rgba(32, 95, 70, 0.14);
+  transform: translateY(-1px);
+  outline: none;
 }
 
 /* Hero Section */
@@ -2121,8 +2158,7 @@ body {
   margin-bottom: 2.2rem;
 }
 
-.institutional-support-heading span,
-.section-eyebrow {
+.institutional-support-heading span {
   display: block;
   margin-bottom: 0.65rem;
   color: #2f735c;
@@ -2193,64 +2229,14 @@ body {
   text-align: left;
 }
 
-/* Platform positioning */
-.platform-positioning {
-  padding: 7rem 5%;
-  background:
-    radial-gradient(circle at 10% 15%, rgba(46, 143, 115, 0.12), transparent 28%),
-    linear-gradient(145deg, #eff8f3 0%, #f8fcfa 55%, #eef7f6 100%);
+.institutional-statement {
+  padding: 2.25rem 5% 3rem;
+  background: #ffffff;
+  border-bottom: 1px solid #dcebe3;
 }
 
-.platform-positioning .section-header {
-  max-width: 900px;
-  margin: 0 auto 3rem;
-}
-
-.platform-positioning .section-header h2 {
-  font-size: clamp(2.2rem, 4vw, 3.6rem);
-  line-height: 1.12;
-}
-
-.positioning-grid {
-  max-width: 1200px;
+.institutional-statement .institutional-boilerplate {
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.2rem;
-}
-
-.positioning-card {
-  min-height: 290px;
-  padding: 2rem;
-  border: 1px solid rgba(127, 184, 153, 0.42);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 18px 38px rgba(20, 58, 44, 0.08);
-}
-
-.positioning-number {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  margin-bottom: 2.2rem;
-  border-radius: 14px;
-  background: #dff3e8;
-  color: #1d6d51;
-  font-weight: 900;
-}
-
-.positioning-card h3 {
-  margin-bottom: 0.8rem;
-  color: var(--primary-green);
-  font-size: 1.35rem;
-}
-
-.positioning-card p {
-  margin: 0;
-  color: #3a5a4f;
-  line-height: 1.75;
 }
 
 /* Pathfinder Section */
@@ -2729,10 +2715,13 @@ body {
 }
 
 /* Responsive Design */
-@media (max-width: 968px) {
+@media (max-width: 1100px) {
   .nav-links {
     display: none;
   }
+}
+
+@media (max-width: 968px) {
 
   .hero h1 {
     font-size: 3.5rem;
@@ -2768,13 +2757,6 @@ body {
     grid-column: 1 / -1;
   }
 
-  .positioning-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .positioning-card {
-    min-height: 0;
-  }
 }
 
 @media (max-width: 640px) {
@@ -2798,9 +2780,12 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .institutional-support,
-  .platform-positioning {
+  .institutional-support {
     padding: 4.5rem 5%;
+  }
+
+  .institutional-statement {
+    padding: 1.5rem 5% 2rem;
   }
 
   .institutional-logo-bar > a,

@@ -4,21 +4,41 @@ import { useAuth } from "../context/AuthContext";
 import { getRoleLabel } from "../utils/roleLabels";
 
 const HUB_NAV_ITEMS = [
-  { key: "tools", title: "Tools", getTo: ({ toolsHref }) => toolsHref },
-  { key: "products", title: "Products", getTo: ({ productsHref }) => productsHref },
-  { key: "fund", title: "Fund", getTo: () => "/hub/fund" },
-  { key: "community", title: "Community", getTo: () => "/hub/community" },
-  { key: "policy", title: "Policy Hub", getTo: () => "/hub/policy" },
-  { key: "ecosystems", title: "Ecosystems", getTo: () => "/hub/ecosystems" },
-  { key: "open-eco-innovation", title: "Open Eco-innovation", getTo: () => "/hub/open-eco-innovation" },
+  { key: "tools", title: { en: "Tools", fr: "Outils" }, getTo: ({ toolsHref }) => toolsHref },
+  { key: "products", title: { en: "Products", fr: "Produits" }, getTo: ({ productsHref }) => productsHref },
+  { key: "fund", title: { en: "Fund", fr: "Financement" }, getTo: () => "/hub/fund" },
+  { key: "community", title: { en: "Community", fr: "Communauté" }, getTo: () => "/hub/community" },
+  { key: "policy", title: { en: "Policy Hub", fr: "Hub des politiques" }, getTo: () => "/hub/policy" },
+  { key: "ecosystems", title: { en: "Ecosystems", fr: "Écosystèmes" }, getTo: () => "/hub/ecosystems" },
+  { key: "open-eco-innovation", title: { en: "Open Eco-innovation", fr: "Éco-innovation ouverte" }, getTo: () => "/hub/open-eco-innovation" },
 ];
+
+const getInitialLanguage = () => {
+  try {
+    return window.localStorage.getItem("greenImpactLanguage") === "fr" ? "fr" : "en";
+  } catch {
+    return "en";
+  }
+};
 
 export default function Home() {
   const statsRef = useRef(null);
   const hubRef = useRef(null);
   const { firebaseUser, profile, logout } = useAuth();
   const [showHubToolsPopup, setShowHubToolsPopup] = useState(false);
+  const [language, setLanguage] = useState(getInitialLanguage);
+  const text = (english, french) => language === "fr" ? french : english;
   const dashboardLabel = getRoleLabel(profile?.role, "Dashboard");
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+    try {
+      window.localStorage.setItem("greenImpactLanguage", language);
+    } catch {
+      // Keep the language switch functional when storage is unavailable.
+    }
+  }, [language]);
+
   useEffect(() => {
     const handleScroll = () => {
       const navbar = document.querySelector(".navbar");
@@ -117,29 +137,42 @@ export default function Home() {
           <a href="#home" className="logo" aria-label="Green Impact home">
             <img src="/images/y.jpg" alt="Green Impact" className="brand-logo-image" />
           </a>
-          <ul className="nav-links">
-            <li><a href="#home">Home</a></li>
-            {!firebaseUser ? <li><a href="#join-us">Join Us</a></li> : null}
-            <li><a href="#hub">Platform Hub</a></li>
-            <li><a href="#about">About</a></li>
-            <li><a href="#achievements">Achievements</a></li>
-            <li><a href="#contact">Contact</a></li>
-            {!firebaseUser ? (
-              <li><a href="#join-us" className="login-btn">Login</a></li>
-            ) : (
-              <>
-                <li><Link to={dashboardHref} className="login-btn">{dashboardLabel}</Link></li>
-                <li><button className="home-signout-btn" onClick={logout}>Sign out</button></li>
-              </>
-            )}
-          </ul>
+          <div className="home-nav-actions">
+            <ul className="nav-links">
+              <li><a href="#home">{text("Home", "Accueil")}</a></li>
+              {!firebaseUser ? <li><a href="#join-us">{text("Join Us", "Nous rejoindre")}</a></li> : null}
+              <li><a href="#hub">{text("Platform Hub", "Hub de la plateforme")}</a></li>
+              <li><a href="#about">{text("About", "À propos")}</a></li>
+              <li><a href="#achievements">{text("Achievements", "Réalisations")}</a></li>
+              <li><a href="#contact">Contact</a></li>
+              {!firebaseUser ? (
+                <li><a href="#join-us" className="login-btn">{text("Login", "Connexion")}</a></li>
+              ) : (
+                <>
+                  <li><Link to={dashboardHref} className="login-btn">{language === "fr" ? "Tableau de bord" : dashboardLabel}</Link></li>
+                  <li><button className="home-signout-btn" onClick={logout}>{text("Sign out", "Déconnexion")}</button></li>
+                </>
+              )}
+            </ul>
+            <button
+              type="button"
+              className="language-switch"
+              onClick={() => setLanguage((current) => current === "fr" ? "en" : "fr")}
+              aria-label={text("Switch to French", "Passer en anglais")}
+              title={text("Switch to French", "Passer en anglais")}
+            >
+              <span className={language === "fr" ? "active" : ""}>FR</span>
+              <span aria-hidden="true">/</span>
+              <span className={language === "en" ? "active" : ""}>EN</span>
+            </button>
+          </div>
         </div>
       </nav>
 
       <div className={`hub-tools-popup ${showHubToolsPopup ? "visible" : ""}`} aria-hidden={!showHubToolsPopup}>
         <div className="hub-tools-popup-head">
-          <span>Tools navigator</span>
-          <a href="#hub">Platform Hub</a>
+          <span>{text("Tools navigator", "Navigateur d’outils")}</span>
+          <a href="#hub">{text("Platform Hub", "Hub de la plateforme")}</a>
         </div>
         <div className="hub-tools-popup-list">
           {HUB_NAV_ITEMS.map((item) => (
@@ -148,7 +181,7 @@ export default function Home() {
               className="hub-tool-pill"
               to={item.getTo({ toolsHref, productsHref })}
             >
-              {item.title}
+              {item.title[language]}
             </Link>
           ))}
         </div>
@@ -157,8 +190,8 @@ export default function Home() {
       <section className="institutional-support" id="home" aria-labelledby="institutional-support-title">
         <div className="institutional-support-inner animate-on-scroll">
           <div className="institutional-support-heading">
-            <span>Avec le soutien de</span>
-            <h2 id="institutional-support-title">Greenov&apos;i et ses partenaires institutionnels</h2>
+            <span>{text("Supported by", "Avec le soutien de")}</span>
+            <h2 id="institutional-support-title">{text("Greenov'i and its institutional partners", "Greenov'i et ses partenaires institutionnels")}</h2>
           </div>
           <div className="institutional-logo-bar" aria-label="Partenaires du projet Greenov'i">
             <a href="https://greenovi.tn" target="_blank" rel="noreferrer" aria-label="Visiter le site de Greenov'i">
@@ -177,9 +210,6 @@ export default function Home() {
               <img src="/images/e.png" alt="République Tunisienne" />
             </div>
           </div>
-          <p className="institutional-boilerplate">
-            Le projet Green Impact est soutenu par Greenov&apos;i, un projet financé par l’Union Européenne en Tunisie à travers le volet entrepreneuriat vert de son Programme «Tunisie Verte &amp; Durable » pour l’appui à l’action environnementale en Tunisie et mis en œuvre par Expertise France en collaboration avec le CITET Tunisia, le Ministère de l’Environnement et le Ministère de l’Economie et de la Planification.
-          </p>
         </div>
       </section>
 
@@ -197,128 +227,112 @@ export default function Home() {
         <div className="hero-glow hero-glow-right" />
         <div className="hero-content">
           <h1>Green Impact</h1>
-          <p className="subtitle">The home of sustainable business</p>
-          <a href="#hub" className="cta-button">Explore platform</a>
+          <p className="subtitle">{text("The home of sustainable business", "La maison de l’entrepreneuriat durable")}</p>
+          <a href="#hub" className="cta-button">{text("Explore platform", "Explorer la plateforme")}</a>
         </div>
       </section>
 
-      <section className="platform-positioning" id="platform-purpose">
-        <div className="section-header animate-on-scroll">
-          <span className="section-eyebrow">One platform, a complete support journey</span>
-          <h2>Built to turn green ideas into sustainable businesses</h2>
-          <p>Green Impact brings guidance, practical tools, learning, mentoring and ecosystem connections together in one place.</p>
-        </div>
-        <div className="positioning-grid animate-on-scroll">
-          <article className="positioning-card">
-            <span className="positioning-number">01</span>
-            <h3>Our main objective</h3>
-            <p>Help green and circular initiatives move from an idea to a structured, viable and measurable-impact business.</p>
-          </article>
-          <article className="positioning-card">
-            <span className="positioning-number">02</span>
-            <h3>Who it is for</h3>
-            <p>Entrepreneurs, companies, business support organizations, mentors, trainers, financial actors and policymakers in Tunisia.</p>
-          </article>
-          <article className="positioning-card">
-            <span className="positioning-number">03</span>
-            <h3>What users can do</h3>
-            <p>Use guided business tools, follow learning paths, prepare documents, access mentoring and explore funding, policy and partnership resources.</p>
-          </article>
-        </div>
+      <section className="institutional-statement" aria-label={text("Green Impact institutional support", "Soutien institutionnel de Green Impact")}>
+        <p className="institutional-boilerplate">
+          {text(
+            "The Green Impact project is supported by Greenov'i, a project funded by the European Union in Tunisia through the green entrepreneurship component of its Green & Sustainable Tunisia programme supporting environmental action in Tunisia, and implemented by Expertise France in collaboration with CITET Tunisia, the Ministry of the Environment and the Ministry of Economy and Planning.",
+            "Le projet Green Impact est soutenu par Greenov'i, un projet financé par l’Union Européenne en Tunisie à travers le volet entrepreneuriat vert de son Programme «Tunisie Verte & Durable » pour l’appui à l’action environnementale en Tunisie et mis en œuvre par Expertise France en collaboration avec le CITET Tunisia, le Ministère de l’Environnement et le Ministère de l’Economie et de la Planification."
+          )}
+        </p>
       </section>
 
       {!firebaseUser ? (
         <section className="join-section" id="join-us">
           <div className="section-header animate-on-scroll">
-            <h2>Join Us</h2>
-            <p>Choose your profile, fill the form, and apply in Tools.</p>
+            <h2>{text("Join Us", "Nous rejoindre")}</h2>
+            <p>{text("Choose your profile, fill the form, and apply in Tools.", "Choisissez votre profil, remplissez le formulaire et déposez votre candidature dans les Outils.")}</p>
           </div>
           <div className="join-choice-grid animate-on-scroll">
             <Link to="/join-us?track=entrepreneur" className="join-choice">
-              <img src="/images/Green%20Entrepreneur.webp" alt="Green entrepreneur registration" className="join-choice-image" />
-              <h3>Green Entrepreneur registration</h3>
-              <p>For entrepreneurs building sustainable and circular projects.</p>
+              <img src="/images/Green%20Entrepreneur.webp" alt={text("Green entrepreneur registration", "Inscription entrepreneur vert")} className="join-choice-image" />
+              <h3>{text("Green Entrepreneur registration", "Inscription entrepreneur vert")}</h3>
+              <p>{text("For entrepreneurs building sustainable and circular projects.", "Pour les entrepreneurs qui développent des projets durables et circulaires.")}</p>
             </Link>
             <Link to="/join-us?track=bso" className="join-choice">
-              <img src="/images/buisness%20support.png" alt="Business support organization registration" className="join-choice-image" />
-              <h3>Business support organization registration</h3>
-              <p>For institutions and organizations with sustainable programs.</p>
+              <img src="/images/buisness%20support.png" alt={text("Business support organization registration", "Inscription structure d’accompagnement")} className="join-choice-image" />
+              <h3>{text("Business support organization registration", "Inscription structure d’accompagnement")}</h3>
+              <p>{text("For institutions and organizations with sustainable programs.", "Pour les institutions et organisations qui portent des programmes durables.")}</p>
             </Link>
             <Link to="/join-us?track=mentor" className="join-choice">
-              <img src="/images/mentor.png" alt="Mentor registration" className="join-choice-image" />
-              <h3>Trainer registration</h3>
-              <p>For mentors and trainers supporting green businesses.</p>
+              <img src="/images/mentor.png" alt={text("Mentor registration", "Inscription mentor")} className="join-choice-image" />
+              <h3>{text("Trainer registration", "Inscription formateur")}</h3>
+              <p>{text("For mentors and trainers supporting green businesses.", "Pour les mentors et formateurs qui accompagnent les entreprises vertes.")}</p>
             </Link>
 
           </div>
           <div className="join-actions">
-            <Link to="/join-us" className="btn primary">Open Join Us forms</Link>
-            <Link to="/login" className="btn">Already registered? Sign in</Link>
+            <Link to="/join-us" className="btn primary">{text("Open Join Us forms", "Ouvrir les formulaires d’inscription")}</Link>
+            <Link to="/login" className="btn">{text("Already registered? Sign in", "Déjà inscrit ? Se connecter")}</Link>
           </div>
         </section>
       ) : null}
 
       <section className="pathfinder" id="hub" ref={hubRef}>
         <div className="section-header hub-section-header animate-on-scroll">
-          <h2>Platform Hub</h2>
-          <p>Choose the support area that matches your next step. Every card now opens a dedicated space with practical information and clear actions.</p>
+          <h2>{text("Platform Hub", "Hub de la plateforme")}</h2>
+          <p>{text("Choose the support area that matches your next step. Every card opens a dedicated space with practical information and clear actions.", "Choisissez l’espace d’accompagnement adapté à votre prochaine étape. Chaque carte ouvre un espace dédié avec des informations pratiques et des actions claires.")}</p>
         </div>
         <div className="cards-grid hub-cards">
           <Link to={toolsHref} className="service-card animate-on-scroll hub-link-card">
-            <span className="hub-card-tag">Core workspace</span>
+            <span className="hub-card-tag">{text("Core workspace", "Espace principal")}</span>
             <div className="card-icon">
-              <img src="/images/toolbox.png" alt="Tools" className="card-icon-image" />
+              <img src="/images/toolbox.png" alt={text("Tools", "Outils")} className="card-icon-image" />
             </div>
-            <h3>Tools</h3>
-            <p>Open the guided sustainable business tools and questionnaires.</p>
+            <h3>{text("Tools", "Outils")}</h3>
+            <p>{text("Open the guided sustainable business tools and questionnaires.", "Accédez aux outils guidés et aux questionnaires pour l’entrepreneuriat durable.")}</p>
           </Link>
           <Link to={productsHref} className="service-card animate-on-scroll hub-link-card">
-            <span className="hub-card-tag">Operations</span>
+            <span className="hub-card-tag">{text("Operations", "Opérations")}</span>
             <div className="card-icon">
-              <img src="/images/product.avif" alt="Products" className="card-icon-image" />
+              <img src="/images/product.avif" alt={text("Products", "Produits")} className="card-icon-image" />
             </div>
-            <h3>Products</h3>
-            <p>Access forms, workshops, application calls, and generated documents.</p>
+            <h3>{text("Products", "Produits")}</h3>
+            <p>{text("Access forms, workshops, application calls, and generated documents.", "Accédez aux formulaires, ateliers, appels à candidatures et documents générés.")}</p>
           </Link>
           <Link to="/hub/fund" className="service-card animate-on-scroll hub-link-card">
-            <span className="hub-card-tag">Funding</span>
+            <span className="hub-card-tag">{text("Funding", "Financement")}</span>
             <div className="card-icon">
-              <img src="/images/funds.png" alt="Fund" className="card-icon-image" />
+              <img src="/images/funds.png" alt={text("Fund", "Financement")} className="card-icon-image" />
             </div>
-            <h3>Fund</h3>
-            <p>Prepare for funding and understand pathways connecting sustainable businesses with financial actors in Tunisia.</p>
+            <h3>{text("Fund", "Financement")}</h3>
+            <p>{text("Prepare for funding and understand pathways connecting sustainable businesses with financial actors in Tunisia.", "Préparez votre financement et découvrez les parcours reliant les entreprises durables aux acteurs financiers en Tunisie.")}</p>
           </Link>
           <Link to="/hub/community" className="service-card animate-on-scroll hub-link-card">
-            <span className="hub-card-tag">Network</span>
+            <span className="hub-card-tag">{text("Network", "Réseau")}</span>
             <div className="card-icon">
-              <img src="/images/community.png" alt="Community" className="card-icon-image" />
+              <img src="/images/community.png" alt={text("Community", "Communauté")} className="card-icon-image" />
             </div>
-            <h3>Community</h3>
-            <p>Meet entrepreneurs, mentors and support organizations advancing sustainable businesses across Tunisia.</p>
+            <h3>{text("Community", "Communauté")}</h3>
+            <p>{text("Meet entrepreneurs, mentors and support organizations advancing sustainable businesses across Tunisia.", "Rencontrez les entrepreneurs, mentors et structures d’accompagnement qui font progresser l’entrepreneuriat durable en Tunisie.")}</p>
           </Link>
           <Link to="/hub/policy" className="service-card animate-on-scroll hub-link-card">
-            <span className="hub-card-tag">Insights</span>
+            <span className="hub-card-tag">{text("Insights", "Ressources")}</span>
             <div className="card-icon">
-              <img src="/images/policy.png" alt="Policy Hub" className="card-icon-image" />
+              <img src="/images/policy.png" alt={text("Policy Hub", "Hub des politiques")} className="card-icon-image" />
             </div>
-            <h3>Policy Hub</h3>
-            <p>Explore resources and dialogue around enabling policies for sustainable businesses in Tunisia.</p>
+            <h3>{text("Policy Hub", "Hub des politiques")}</h3>
+            <p>{text("Explore resources and dialogue around enabling policies for sustainable businesses in Tunisia.", "Explorez les ressources et les échanges sur les politiques favorables aux entreprises durables en Tunisie.")}</p>
           </Link>
           <Link to="/hub/ecosystems" className="service-card animate-on-scroll hub-link-card">
-            <span className="hub-card-tag">Ecosystem</span>
+            <span className="hub-card-tag">{text("Ecosystem", "Écosystème")}</span>
             <div className="card-icon">
-              <img src="/images/ecosystems.png" alt="Ecosystems" className="card-icon-image" />
+              <img src="/images/ecosystems.png" alt={text("Ecosystems", "Écosystèmes")} className="card-icon-image" />
             </div>
-            <h3>Ecosystems</h3>
-            <p>Understand and strengthen the partnerships that support green and circular business development in Tunisia.</p>
+            <h3>{text("Ecosystems", "Écosystèmes")}</h3>
+            <p>{text("Understand and strengthen the partnerships that support green and circular business development in Tunisia.", "Comprenez et renforcez les partenariats qui soutiennent le développement des entreprises vertes et circulaires en Tunisie.")}</p>
           </Link>
           <Link to="/hub/open-eco-innovation" className="service-card animate-on-scroll hub-link-card">
             <span className="hub-card-tag">Innovation</span>
             <div className="card-icon">
-              <img src="/images/open.png" alt="Open Eco-innovation" className="card-icon-image" />
+              <img src="/images/open.png" alt={text("Open Eco-innovation", "Éco-innovation ouverte")} className="card-icon-image" />
             </div>
-            <h3>Open Eco-innovation</h3>
-            <p>Connect companies and institutions seeking green solutions with entrepreneurs ready to innovate.</p>
+            <h3>{text("Open Eco-innovation", "Éco-innovation ouverte")}</h3>
+            <p>{text("Connect companies and institutions seeking green solutions with entrepreneurs ready to innovate.", "Mettez en relation les entreprises et institutions à la recherche de solutions vertes avec des entrepreneurs prêts à innover.")}</p>
           </Link>
         </div>
       </section>
@@ -326,18 +340,30 @@ export default function Home() {
       <section className="about" id="about">
         <div className="about-content">
           <div className="about-text animate-on-scroll">
-            <h2>About</h2>
+            <h2>{text("About", "À propos")}</h2>
             <p>
-              <strong>GreenImpact</strong> belongs to The Green Impact Support Programme, an initiative which contributes to the 2030 Agenda for Sustainable Development and its SDGs by creating and enhancing sustainable businesses.
+              <strong>GreenImpact</strong> {text(
+                "belongs to the Green Impact Support Programme, an initiative contributing to the 2030 Agenda for Sustainable Development and its SDGs by creating and strengthening sustainable businesses.",
+                "fait partie du Programme d’appui Green Impact, une initiative qui contribue à l’Agenda 2030 pour le développement durable et à ses ODD en créant et en renforçant des entreprises durables."
+              )}
             </p>
             <p>
-              In order to create an enabling ecosystem for sustainable enterprises, through The Green Impact Support Programme we work closely with green and circular entrepreneurs and companies, business support organizations, trainers and mentors, financial institutions, policy-makers and other relevant stakeholders.
+              {text(
+                "To create an enabling ecosystem for sustainable enterprises, the Green Impact Support Programme works closely with green and circular entrepreneurs and companies, business support organizations, trainers and mentors, financial institutions, policymakers and other relevant stakeholders.",
+                "Afin de créer un écosystème favorable aux entreprises durables, le Programme d’appui Green Impact travaille étroitement avec les entrepreneurs et entreprises vertes et circulaires, les structures d’accompagnement, les formateurs et mentors, les institutions financières, les décideurs publics et les autres parties prenantes."
+              )}
             </p>
             <p>
-              In national countries, we set up national Partnerships gathered under a common community of practices Business Support Organizations which targets sustainable entrepreneurs and companies.
+              {text(
+                "In Tunisia, we develop partnerships and a shared community of practice among business support organizations serving sustainable entrepreneurs and companies.",
+                "En Tunisie, nous développons des partenariats et une communauté de pratiques commune entre les structures d’accompagnement au service des entrepreneurs et entreprises durables."
+              )}
             </p>
             <p>
-              Our main targets are the Green Impact community, businesses implementing innovative ecological and social solutions that contribute to a switch to sustainable and fair consumption and production models.
+              {text(
+                "Our main beneficiaries are the Green Impact community and businesses implementing innovative environmental and social solutions that support the transition to sustainable and fair consumption and production models.",
+                "Nos principaux bénéficiaires sont la communauté Green Impact et les entreprises qui mettent en œuvre des solutions environnementales et sociales innovantes contribuant à la transition vers des modes de consommation et de production durables et équitables."
+              )}
             </p>
           </div>
 
@@ -356,7 +382,7 @@ export default function Home() {
 
         <div className="about-gallery animate-on-scroll">
           <div>
-            <h4>We support you at every stage of development:</h4><br /><br />
+            <h4>{text("We support you at every stage of development:", "Nous vous accompagnons à chaque étape de votre développement :")}</h4><br /><br />
             <img
               src="/images/about1.png"
               alt="Sustainable business development"
@@ -364,7 +390,7 @@ export default function Home() {
             />
           </div>
           <div>
-            <h4>We provide The Green Impact community with a comprehensive set of services to design,</h4> <h4>develop and accelerate their green and circular businesses:</h4><br />
+            <h4>{text("We provide the Green Impact community with a comprehensive set of services to design,", "Nous proposons à la communauté Green Impact un ensemble complet de services pour concevoir,")}</h4> <h4>{text("develop and accelerate their green and circular businesses:", "développer et accélérer leurs entreprises vertes et circulaires :")}</h4><br />
             <img
               src="/images/about2.png"
               alt="Green entrepreneurship"
@@ -376,18 +402,18 @@ export default function Home() {
 
       <section id="achievements">
         <div className="achievements-header animate-on-scroll">
-          <h2>Achievements</h2>
+          <h2>{text("Achievements", "Réalisations")}</h2>
         </div>
 
         <section className="stats" ref={statsRef}>
           <div className="stats-grid">
             {[
-              { number: 630, label: "Entrepreneurs", desc: "Persons supported to develop their Sustainable Businesses." },
-              { number: 12, label: "Trainers", desc: "Experts trained in Sustainable Business Model Development." },
-              { number: 3, label: "BSO", desc: "Business Support Organizations members of the Green Impact Support Programme." },
-              { number: 654, label: "Members", desc: "Eco-innovators of The GreenImpact community." },
-              { number: "64%", label: "are women", desc: "% of supported entrepreneurs that are women" },
-              { number: "70%", label: "are satisfied", desc: "% of entrepreneurs that are satisfied with the supporting services and tools" }
+              { number: 630, label: text("Entrepreneurs", "Entrepreneurs"), desc: text("People supported in developing their sustainable businesses.", "Personnes accompagnées dans le développement de leurs entreprises durables.") },
+              { number: 12, label: text("Trainers", "Formateurs"), desc: text("Experts trained in sustainable business model development.", "Experts formés au développement de modèles d’affaires durables.") },
+              { number: 3, label: text("BSO", "SAE"), desc: text("Business support organizations in the Green Impact Support Programme.", "Structures d’accompagnement membres du Programme d’appui Green Impact.") },
+              { number: 654, label: text("Members", "Membres"), desc: text("Eco-innovators in the Green Impact community.", "Éco-innovateurs de la communauté Green Impact.") },
+              { number: "64%", label: text("are women", "sont des femmes"), desc: text("Share of supported entrepreneurs who are women.", "Part des entrepreneurs accompagnés qui sont des femmes.") },
+              { number: "70%", label: text("are satisfied", "sont satisfaits"), desc: text("Share of entrepreneurs satisfied with the support services and tools.", "Part des entrepreneurs satisfaits des services et outils d’accompagnement.") }
             ].map((stat, idx) => (
               <div key={idx} className="stat-item">
                 <span className="stat-number">{stat.number}</span>
@@ -402,17 +428,17 @@ export default function Home() {
       <section className="contact" id="contact">
         <div className="contact-container">
           <div className="contact-info animate-on-scroll">
-            <h2>Contact us</h2>
+            <h2>{text("Contact us", "Contactez-nous")}</h2>
             <div className="contact-item">
-              <h3>Number</h3>
+              <h3>{text("Phone", "Téléphone")}</h3>
               <p>51266459</p>
             </div>
             <div className="contact-item">
-              <h3>Localisation</h3>
+              <h3>{text("Location", "Localisation")}</h3>
               <p>Regueb , Sidi Bouzid , Tunis</p>
             </div>
             <div className="contact-item">
-              <h3>Mail</h3>
+              <h3>{text("Email", "E-mail")}</h3>
               <p>
                 <a href="mailto:association.rawafed1@gmail.com">association.rawafed1@gmail.com</a>
               </p>
@@ -427,27 +453,27 @@ export default function Home() {
             <img src="/images/y.jpg" alt="Green Impact" className="footer-brand-logo" />
           </div>
           <div className="footer-section">
-            <h3>Quick links</h3>
+            <h3>{text("Quick links", "Liens rapides")}</h3>
             <ul className="footer-links">
-              <li><a href="#home">Home</a></li>
-              <li><a href="#hub">Platform Hub</a></li>
-              <li><a href="#about">About</a></li>
+              <li><a href="#home">{text("Home", "Accueil")}</a></li>
+              <li><a href="#hub">{text("Platform Hub", "Hub de la plateforme")}</a></li>
+              <li><a href="#about">{text("About", "À propos")}</a></li>
               <li><a href="#contact">Contact</a></li>
               <li><a href="https://greenovi.tn" target="_blank" rel="noreferrer">Greenov&apos;i</a></li>
-              <li><a href="https://www.eeas.europa.eu/delegations/tunisia_fr?s=126" target="_blank" rel="noreferrer">European Union in Tunisia</a></li>
+              <li><a href="https://www.eeas.europa.eu/delegations/tunisia_fr?s=126" target="_blank" rel="noreferrer">{text("European Union in Tunisia", "Union européenne en Tunisie")}</a></li>
             </ul>
           </div>
           <div className="footer-section">
             <h3>Services</h3>
             <ul className="footer-links">
-              <li><a href="#hub">Tools</a></li>
-              <li><a href="#hub">Products</a></li>
-              <li><a href="#hub">Community</a></li>
-              <li><a href="#hub">Policy Hub</a></li>
+              <li><a href="#hub">{text("Tools", "Outils")}</a></li>
+              <li><a href="#hub">{text("Products", "Produits")}</a></li>
+              <li><a href="#hub">{text("Community", "Communauté")}</a></li>
+              <li><a href="#hub">{text("Policy Hub", "Hub des politiques")}</a></li>
             </ul>
           </div>
           <div className="footer-section">
-            <h3>Follow us</h3>
+            <h3>{text("Follow us", "Suivez-nous")}</h3>
             <ul className="footer-links">
               <li><a href="#">Facebook</a></li>
               <li><a href="#">Twitter</a></li>
@@ -460,13 +486,13 @@ export default function Home() {
           <div className="footer-lower">
             <div className="footer-lower-left">
               <div className="footer-credits">
-                <p>Developed by:</p>
+                <p>{text("Developed by:", "Développé par :")}</p>
                 <div className="footer-credit-images">
                   <img src="/images/x.png" alt="Developed by rawafed" className="footer-credit-image" />
                   <img src="/images/y.jpg" alt="Developed by Green impact" className="footer-credit-image" />
                 </div>
               </div>
-              <p>Funded by:</p>
+              <p>{text("Funded by:", "Financé par :")}</p>
               <div className="footer-partners">
                 <img src="/images/a.png" alt="Partner a" className="footer-partner-image" />
                 <img src="/images/b.png" alt="Partner b" className="footer-partner-image" />

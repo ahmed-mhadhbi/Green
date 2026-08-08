@@ -114,7 +114,9 @@ export default function Home() {
     <div>
       <nav className="navbar">
         <div className="nav-container">
-          <a href="#home" className="logo">Green<span>Impact</span></a>
+          <a href="#home" className="logo" aria-label="Green Impact home">
+            <img src="/images/y.jpg" alt="Green Impact" className="brand-logo-image" />
+          </a>
           <ul className="nav-links">
             <li><a href="#home">Home</a></li>
             {!firebaseUser ? <li><a href="#join-us">Join Us</a></li> : null}
@@ -165,9 +167,64 @@ export default function Home() {
         <div className="hero-glow hero-glow-left" />
         <div className="hero-glow hero-glow-right" />
         <div className="hero-content">
+          <img src="/images/y.jpg" alt="Green Impact project logo" className="hero-project-logo" />
           <h1>Green Impact</h1>
           <p className="subtitle">The home of sustainable business</p>
           <a href="#hub" className="cta-button">Explore platform</a>
+        </div>
+      </section>
+
+      <section className="institutional-support" aria-labelledby="institutional-support-title">
+        <div className="institutional-support-inner animate-on-scroll">
+          <div className="institutional-support-heading">
+            <span>Avec le soutien de</span>
+            <h2 id="institutional-support-title">Greenov&apos;i et ses partenaires institutionnels</h2>
+          </div>
+          <div className="institutional-logo-bar" aria-label="Partenaires du projet Greenov'i">
+            <a href="https://greenovi.tn" target="_blank" rel="noreferrer" aria-label="Visiter le site de Greenov'i">
+              <img src="/images/a.png" alt="Greenov'i" />
+            </a>
+            <a href="https://www.eeas.europa.eu/delegations/tunisia_fr?s=126" target="_blank" rel="noreferrer" aria-label="Visiter le site de l'Union européenne en Tunisie">
+              <img src="/images/b.png" alt="Financé par l'Union européenne" />
+            </a>
+            <div className="institutional-logo-item">
+              <img src="/images/c.jpg" alt="Tunisie Verte et Durable" />
+            </div>
+            <div className="institutional-logo-item institutional-logo-item-wide">
+              <img src="/images/d.jpg" alt="France et Expertise France, Groupe AFD" />
+            </div>
+            <div className="institutional-logo-item">
+              <img src="/images/e.png" alt="République Tunisienne" />
+            </div>
+          </div>
+          <p className="institutional-boilerplate">
+            Le projet Green Impact est soutenu par Greenov&apos;i, un projet financé par l’Union Européenne en Tunisie à travers le volet entrepreneuriat vert de son Programme «Tunisie Verte &amp; Durable » pour l’appui à l’action environnementale en Tunisie et mis en œuvre par Expertise France en collaboration avec le CITET Tunisia, le Ministère de l’Environnement et le Ministère de l’Economie et de la Planification.
+          </p>
+        </div>
+      </section>
+
+      <section className="platform-positioning" id="platform-purpose">
+        <div className="section-header animate-on-scroll">
+          <span className="section-eyebrow">One platform, a complete support journey</span>
+          <h2>Built to turn green ideas into sustainable businesses</h2>
+          <p>Green Impact brings guidance, practical tools, learning, mentoring and ecosystem connections together in one place.</p>
+        </div>
+        <div className="positioning-grid animate-on-scroll">
+          <article className="positioning-card">
+            <span className="positioning-number">01</span>
+            <h3>Our main objective</h3>
+            <p>Help green and circular initiatives move from an idea to a structured, viable and measurable-impact business.</p>
+          </article>
+          <article className="positioning-card">
+            <span className="positioning-number">02</span>
+            <h3>Who it is for</h3>
+            <p>Entrepreneurs, companies, business support organizations, mentors, trainers, financial actors and policymakers in Tunisia.</p>
+          </article>
+          <article className="positioning-card">
+            <span className="positioning-number">03</span>
+            <h3>What users can do</h3>
+            <p>Use guided business tools, follow learning paths, prepare documents, access mentoring and explore funding, policy and partnership resources.</p>
+          </article>
         </div>
       </section>
 
@@ -205,7 +262,7 @@ export default function Home() {
       <section className="pathfinder" id="hub" ref={hubRef}>
         <div className="section-header hub-section-header animate-on-scroll">
           <h2>Platform Hub</h2>
-          <p>Move through the platform faster with lighter cards and direct tool access.</p>
+          <p>Choose the support area that matches your next step. Every card now opens a dedicated space with practical information and clear actions.</p>
         </div>
         <div className="cards-grid hub-cards">
           <Link to={toolsHref} className="service-card animate-on-scroll hub-link-card">
@@ -230,7 +287,7 @@ export default function Home() {
               <img src="/images/funds.png" alt="Fund" className="card-icon-image" />
             </div>
             <h3>Fund</h3>
-            <p>Connecting sustainable businesses with financial actors in the national</p>
+            <p>Prepare for funding and understand pathways connecting sustainable businesses with financial actors in Tunisia.</p>
           </Link>
           <Link to="/hub/community" className="service-card animate-on-scroll hub-link-card">
             <span className="hub-card-tag">Network</span>
@@ -238,7 +295,7 @@ export default function Home() {
               <img src="/images/community.png" alt="Community" className="card-icon-image" />
             </div>
             <h3>Community</h3>
-            <p>Meet and join the inspiring community of sustainable businesses across the national</p>
+            <p>Meet entrepreneurs, mentors and support organizations advancing sustainable businesses across Tunisia.</p>
           </Link>
           <Link to="/hub/policy" className="service-card animate-on-scroll hub-link-card">
             <span className="hub-card-tag">Insights</span>
@@ -246,7 +303,7 @@ export default function Home() {
               <img src="/images/policy.png" alt="Policy Hub" className="card-icon-image" />
             </div>
             <h3>Policy Hub</h3>
-            <p>Learn more about enabling policies for sustainable busniesses in the national</p>
+            <p>Explore resources and dialogue around enabling policies for sustainable businesses in Tunisia.</p>
           </Link>
           <Link to="/hub/ecosystems" className="service-card animate-on-scroll hub-link-card">
             <span className="hub-card-tag">Ecosystem</span>
@@ -254,7 +311,7 @@ export default function Home() {
               <img src="/images/ecosystems.png" alt="Ecosystems" className="card-icon-image" />
             </div>
             <h3>Ecosystems</h3>
-            <p>Advancing sutainable and circular business development ecosystems in the national</p>
+            <p>Understand and strengthen the partnerships that support green and circular business development in Tunisia.</p>
           </Link>
           <Link to="/hub/open-eco-innovation" className="service-card animate-on-scroll hub-link-card">
             <span className="hub-card-tag">Innovation</span>
@@ -262,7 +319,7 @@ export default function Home() {
               <img src="/images/open.png" alt="Open Eco-innovation" className="card-icon-image" />
             </div>
             <h3>Open Eco-innovation</h3>
-            <p>Connecting companies and entrepreneurs in the national</p>
+            <p>Connect companies and institutions seeking green solutions with entrepreneurs ready to innovate.</p>
           </Link>
         </div>
       </section>
@@ -370,7 +427,7 @@ export default function Home() {
       <footer className="footer">
         <div className="footer-content">
           <div className="footer-section">
-            <h3>Green Impact</h3>
+            <img src="/images/y.jpg" alt="Green Impact" className="footer-brand-logo" />
           </div>
           <div className="footer-section">
             <h3>Quick links</h3>
@@ -379,6 +436,8 @@ export default function Home() {
               <li><a href="#hub">Platform Hub</a></li>
               <li><a href="#about">About</a></li>
               <li><a href="#contact">Contact</a></li>
+              <li><a href="https://greenovi.tn" target="_blank" rel="noreferrer">Greenov&apos;i</a></li>
+              <li><a href="https://www.eeas.europa.eu/delegations/tunisia_fr?s=126" target="_blank" rel="noreferrer">European Union in Tunisia</a></li>
             </ul>
           </div>
           <div className="footer-section">

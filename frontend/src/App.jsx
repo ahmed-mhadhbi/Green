@@ -44,10 +44,10 @@ export default function App() {
       <Route path="/app/tools" element={withAppLayout(<ToolsPage />)} />
       <Route path="/app/tools/:toolKey" element={withAppLayout(<ToolQuestionnairePage />)} />
       <Route path="/app/products" element={withAppLayout(<ProductsPage />)} />
-      <Route path="/hub/fund" element={<HubPlaceholderPage title="Fund" />} />
-      <Route path="/hub/community" element={<HubPlaceholderPage title="Community" />} />
+      <Route path="/hub/fund" element={<HubPlaceholderPage hubKey="fund" />} />
+      <Route path="/hub/community" element={<HubPlaceholderPage hubKey="community" />} />
       <Route path="/hub/policy" element={<PolicyHubPage />} />
-      <Route path="/hub/ecosystems" element={<HubPlaceholderPage title="Ecosystems" />} />
+      <Route path="/hub/ecosystems" element={<HubPlaceholderPage hubKey="ecosystems" />} />
       <Route path="/hub/open-eco-innovation" element={<OpenEcoInnovationPage />} />
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>

@@ -7,7 +7,8 @@ const { authMiddleware } = require("../middleware/auth");
 const { requireRole } = require("../middleware/requireRole");
 
 const router = express.Router();
-const uploadDir = path.join(process.cwd(), "uploads", "group-lessons");
+const uploadRoot = process.env.UPLOAD_DIR || path.resolve(__dirname, "../../uploads");
+const uploadDir = path.join(uploadRoot, "group-lessons");
 fs.mkdirSync(uploadDir, { recursive: true });
 
 const upload = multer({

@@ -2042,15 +2042,6 @@ body {
   animation: fadeInUp 1s ease-out;
 }
 
-.hero-project-logo {
-  width: 112px;
-  height: 112px;
-  object-fit: contain;
-  margin-bottom: 1.35rem;
-  border-radius: 24px;
-  box-shadow: 0 20px 48px rgba(8, 35, 27, 0.3);
-}
-
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -2115,6 +2106,7 @@ body {
 /* Institutional partners */
 .institutional-support {
   padding: 5.5rem 5%;
+  margin-top: 92px;
   background: #ffffff;
   border-bottom: 1px solid #dcebe3;
 }
@@ -2804,12 +2796,6 @@ body {
 
   .tool-progress-list {
     grid-template-columns: 1fr;
-  }
-
-  .hero-project-logo {
-    width: 88px;
-    height: 88px;
-    border-radius: 18px;
   }
 
   .institutional-support,

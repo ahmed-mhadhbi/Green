@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { Link } from "react-router-dom";
-import { apiRequest } from "../api/client";
+import { API_ORIGIN, apiRequest } from "../api/client";
 import { useAuth } from "../context/AuthContext";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000/api";
-const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
 
 const APPLICATIONS = [
   { id: "app-1", title: "national Green Accelerator", period: "Open until 2026-03-31" },

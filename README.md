@@ -36,10 +36,28 @@ npm run dev
 
 ## Environment notes
 - Backend requires Firebase Admin credentials in `.env`.
-- Frontend requires Firebase Web app config and backend URL.
+- Frontend requires Firebase Web app config. `VITE_API_BASE_URL=/api` works for local Vite through the proxy and for hosted same-domain deployments served by Express. Use a full URL such as `https://api.example.com/api` only when the frontend and API are hosted on different domains.
+- Backend `CLIENT_ORIGIN` accepts `*` for simple bring-up or one/more comma-separated frontend origins for locked-down separate-domain hosting, for example `http://localhost:5173,https://green-impact.com`.
+- Backend uploads use `backend/uploads` by default. Set `UPLOAD_DIR=/absolute/persistent/uploads` on a VPS if you want uploaded files outside the app folder.
 - AI entrepreneur coach uses Google AI Studio (Gemini). Add `GEMINI_API_KEY` to `backend/.env` (get a free key at [Google AI Studio](https://aistudio.google.com/apikey)). Optional: `GEMINI_MODEL` (default `gemini-2.5-flash`).
+- If Gemini is not configured or temporarily fails, the coach returns a built-in fallback reply instead of breaking the chat.
 - First admin user can be promoted by setting role from Firestore manually once, then use admin panel.
 - This project uses the npm/module approach for Firebase (`import ... from "firebase/..."`) rather than `<script>` tags.
+
+## VPS deployment
+Build the React app first, then run the Express API. The backend serves `frontend/dist` and falls back to `index.html` for React routes, so page refreshes on `/dashboard`, `/app/tools`, and other deep links do not return 404.
+
+```bash
+cd frontend
+npm install
+npm run build
+
+cd ../backend
+npm install
+npm start
+```
+
+For a same-domain VPS setup behind Nginx, point the domain to the backend process, or proxy traffic to `localhost:4000`. Keep `VITE_API_BASE_URL=/api` before building the frontend. For split domains, set `VITE_API_BASE_URL=https://your-api-domain/api` before `npm run build` and set backend `CLIENT_ORIGIN` to the frontend domain.
 
 ## Firebase quick setup (your project)
 - Frontend config is prefilled in `frontend/.env.example` for `greenland-a11db`.

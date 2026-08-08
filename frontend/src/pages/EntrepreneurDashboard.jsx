@@ -1,13 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import dayjs from "dayjs";
-import { apiRequest } from "../api/client";
+import { API_ORIGIN, apiRequest } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { buildToolProgressList } from "../utils/toolProgress";
 import { TOOLS_CATALOG } from "../data/toolsCatalog";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000/api";
-const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
 
 const DEFAULT_FORMS = {
   valueProposition: "",

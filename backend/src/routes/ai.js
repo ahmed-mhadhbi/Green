@@ -167,7 +167,21 @@ router.post("/coach", authMiddleware, requireRole("entrepreneur"), async (req, r
       });
     }
 
-    next(error);
+    if (error?.status === 400) {
+      return next(error);
+    }
+
+    console.warn("AI coach unavailable, using fallback coach:", message.split("\n")[0]);
+    return res.json({
+      reply: buildFallbackCoachReply({
+        message: req.body?.message,
+        questions: req.body?.questions || [],
+        answers: req.body?.answers || {},
+        sectionTitle: req.body?.sectionTitle || "Current section",
+        toolTitle: req.body?.toolTitle || "Business tool"
+      }),
+      source: "fallback-error"
+    });
   }
 });
 

@@ -154,27 +154,7 @@ export default function Home() {
         </div>
       </div>
 
-      <section className="hero" id="home">
-        <video
-          className="hero-video"
-          src="/videos/bg.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-        />
-        <div className="hero-overlay" />
-        <div className="hero-glow hero-glow-left" />
-        <div className="hero-glow hero-glow-right" />
-        <div className="hero-content">
-          <img src="/images/y.jpg" alt="Green Impact project logo" className="hero-project-logo" />
-          <h1>Green Impact</h1>
-          <p className="subtitle">The home of sustainable business</p>
-          <a href="#hub" className="cta-button">Explore platform</a>
-        </div>
-      </section>
-
-      <section className="institutional-support" aria-labelledby="institutional-support-title">
+      <section className="institutional-support" id="home" aria-labelledby="institutional-support-title">
         <div className="institutional-support-inner animate-on-scroll">
           <div className="institutional-support-heading">
             <span>Avec le soutien de</span>
@@ -200,6 +180,25 @@ export default function Home() {
           <p className="institutional-boilerplate">
             Le projet Green Impact est soutenu par Greenov&apos;i, un projet financé par l’Union Européenne en Tunisie à travers le volet entrepreneuriat vert de son Programme «Tunisie Verte &amp; Durable » pour l’appui à l’action environnementale en Tunisie et mis en œuvre par Expertise France en collaboration avec le CITET Tunisia, le Ministère de l’Environnement et le Ministère de l’Economie et de la Planification.
           </p>
+        </div>
+      </section>
+
+      <section className="hero">
+        <video
+          className="hero-video"
+          src="/videos/bg.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+        <div className="hero-overlay" />
+        <div className="hero-glow hero-glow-left" />
+        <div className="hero-glow hero-glow-right" />
+        <div className="hero-content">
+          <h1>Green Impact</h1>
+          <p className="subtitle">The home of sustainable business</p>
+          <a href="#hub" className="cta-button">Explore platform</a>
         </div>
       </section>
 
@@ -383,14 +382,12 @@ export default function Home() {
         <section className="stats" ref={statsRef}>
           <div className="stats-grid">
             {[
-              { number: 0, label: "Entrepreneurs", desc: "Persons supported to develop their Sustainable Businesses." },
-              { number: 0, label: "Trainers", desc: "Experts trained in Sustainable Business Model Development." },
-              { number: 0, label: "BSO", desc: "Business Support Organizations members of the Green Impact Support Programme." },
-              { number: 0, label: "Members", desc: "Eco-innovators of The GreenImpact community." },
-              { number: "0%", label: "are women", desc: "% of supported entrepreneurs that are women" },
-              { number: "0%", label: "are satisfied", desc: "% of entrepreneurs that are satisfied with the supporting services and tools" },
-              { number: 0, label: "Sources", desc: "Sources of financing available in our database" },
-              { number: 0, label: "Million", desc: "Million EUR raised by The Green Impact Fund" }
+              { number: 630, label: "Entrepreneurs", desc: "Persons supported to develop their Sustainable Businesses." },
+              { number: 12, label: "Trainers", desc: "Experts trained in Sustainable Business Model Development." },
+              { number: 3, label: "BSO", desc: "Business Support Organizations members of the Green Impact Support Programme." },
+              { number: 654, label: "Members", desc: "Eco-innovators of The GreenImpact community." },
+              { number: "64%", label: "are women", desc: "% of supported entrepreneurs that are women" },
+              { number: "70%", label: "are satisfied", desc: "% of entrepreneurs that are satisfied with the supporting services and tools" }
             ].map((stat, idx) => (
               <div key={idx} className="stat-item">
                 <span className="stat-number">{stat.number}</span>

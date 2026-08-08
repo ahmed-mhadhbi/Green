@@ -8,9 +8,10 @@ const { requireRole } = require("../middleware/requireRole");
 
 const router = express.Router();
 
-const uploadDir = path.join(process.cwd(), "uploads", "projects");
+const uploadRoot = process.env.UPLOAD_DIR || path.resolve(__dirname, "../../uploads");
+const uploadDir = path.join(uploadRoot, "projects");
 fs.mkdirSync(uploadDir, { recursive: true });
-const privateLessonUploadDir = path.join(process.cwd(), "uploads", "private-lessons");
+const privateLessonUploadDir = path.join(uploadRoot, "private-lessons");
 fs.mkdirSync(privateLessonUploadDir, { recursive: true });
 
 function buildSafeFilename(file) {

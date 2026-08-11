@@ -239,6 +239,50 @@ export default function Home() {
             "Le projet Green Impact est soutenu par Greenov'i, un projet financé par l’Union Européenne en Tunisie à travers le volet entrepreneuriat vert de son Programme «Tunisie Verte & Durable » pour l’appui à l’action environnementale en Tunisie et mis en œuvre par Expertise France en collaboration avec le CITET Tunisia, le Ministère de l’Environnement et le Ministère de l’Economie et de la Planification."
           )}
         </p>
+
+        <article className="application-callout animate-on-scroll" aria-labelledby="application-callout-title">
+          <div className="application-callout-visual">
+            <img
+              src="/images/green-impact-call-for-applications-2026.jpeg"
+              alt={text("Green Impact call for applications flyer", "Affiche de l'appel à candidatures Green Impact")}
+            />
+          </div>
+          <div className="application-callout-content">
+            <span className="application-callout-kicker">{text("Applications open", "Candidatures ouvertes")}</span>
+            <h2 id="application-callout-title">{text("Green Impact Call for Applications", "Appel à candidatures Green Impact")}</h2>
+            <p className="application-callout-share">
+              <span aria-hidden="true">📢</span>{" "}
+              {text(
+                "Don’t miss this opportunity! Share this call with your network!",
+                "Ne manquez pas cette opportunité\u00a0! Partagez cet appel autour de vous."
+              )}
+            </p>
+            <div className="application-callout-links">
+              <a
+                href="https://docs.google.com/.../1FAIpQLSdU1a9d9MNd5o.../viewform"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span className="application-callout-link-label">
+                  <span aria-hidden="true">👉</span>{" "}
+                  {text("Application form", "Formulaire de candidature")}
+                </span>
+                <span className="application-callout-link-url">docs.google.com/.../viewform</span>
+              </a>
+              <a
+                href="https://drive.google.com/file/d/10Z8dqUEV4CYAsNWPGdNytIWxmrr5GDgM/view?usp=sharing"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span className="application-callout-link-label">
+                  <span aria-hidden="true">📄</span>{" "}
+                  {text("Read the Call for Applications", "Consultez l'appel à candidatures")}
+                </span>
+                <span className="application-callout-link-url">drive.google.com/file/d/10Z8.../view</span>
+              </a>
+            </div>
+          </div>
+        </article>
       </section>
 
       {!firebaseUser ? (
